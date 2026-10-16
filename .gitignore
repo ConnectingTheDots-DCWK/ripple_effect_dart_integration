@@ -1,0 +1,8 @@
+/out/
+.dart_tool/
+/build/
+pubspec.lock
+!/example/flame_player/pubspec.lock
+.idea/
+.vscode/*
+*.swp
