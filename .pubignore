@@ -1,0 +1,28 @@
+# What `dart pub publish` leaves out. A .pubignore REPLACES .gitignore for
+# pub rather than adding to it, so everything .gitignore names is named here
+# again, with its leading `/` kept: an unanchored pattern matches at any
+# depth (CLAUDE.md, *.pubignore replaces .gitignore*).
+/out/
+.dart_tool/
+/build/
+pubspec.lock
+.idea/
+.vscode/
+*.swp
+
+# The repository's own machinery, which a consumer never runs.
+/.github/
+/.pre-commit-config.yaml
+/scripts/
+/tool/generate/
+/tool/trufflehog/
+/tool/pre_push.sh
+/CLAUDE.md
+/SECURITY.md
+
+# The Flame example's builds and the campaign its prepare step copies in;
+# its sources and platform runners are published, as an example should be.
+/example/flame_player/build/
+/example/flame_player/.dart_tool/
+/example/flame_player/assets/campaign/
+/example/flame_player/pubspec.lock
