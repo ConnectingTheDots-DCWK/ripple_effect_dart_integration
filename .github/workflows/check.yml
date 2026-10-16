@@ -25,7 +25,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # The formatter's output moves between SDK releases, so the check runs
+      # the one the maintainer's hook does (Flutter 3.41.9's Dart). Move both
+      # together.
       - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.11.5
       - run: dart pub get
       - run: dart format --set-exit-if-changed --output=none .
       - run: dart analyze --fatal-infos

@@ -163,6 +163,14 @@ version, which no APK could pass (below).
 - **ffigen names a C enum field `<name>AsInt`**, with a getter of the enum's
   own name beside it. The generator maps it back to the C name for the layout
   record; anything reading the bindings by field name has to as well.
+- **The SDK renames every dylib a hook bundles**, with `install_name_tool
+  -id`, and a dylib linked without header room cannot take a longer name:
+  engine 1.5.3's macOS library failed every macOS build here with *larger
+  updated load commands do not fit*. Engine 1.5.4 links its Apple libraries
+  with `-headerpad_max_install_names` and its archive step tests a rename;
+  the binding needs 1.5.4 on macOS as well as on iOS.
+- **The formatter moves between SDK releases.** CI's `format` job pins the
+  Dart of the maintainer's Flutter (3.11.5) so it agrees with the hook.
 - **The Flame example on a Linux desktop needs gstreamer's headers**
   (`libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`), for
   audioplayers; without them `flutter build linux` fails in CMake.

@@ -94,7 +94,9 @@ the isolate that made it; one isolate at a time may use it.
 - **Windows** (x64, arm64): `ripple_effect_engine.dll`, built against the
   dynamic CRT.
 - **macOS** (arm64, x64), 12.0 and up: one library per architecture; a
-  universal Flutter app takes both.
+  universal Flutter app takes both. Engine 1.5.4 or later: the SDK renames
+  the library as it bundles it, and 1.5.3's had no room in its header for
+  that.
 - **Linux** (x64, arm64): glibc 2.35 and up. A distribution that is not glibc
   — Alpine's musl — has no engine build.
 - **Android** (arm64, x86_64 for the emulator), API 24 and up: Flutter packs
