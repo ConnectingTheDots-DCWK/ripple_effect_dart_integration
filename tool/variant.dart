@@ -8,6 +8,10 @@
 // this writes the block a consumer would write in theirs at the end of this
 // package's pubspec, between two markers, or takes it out. CI runs it
 // before the no-python legs; never commit the block.
+//
+// It also writes `out/variant.json`, which the web suite reads: no hook runs
+// for a web build, and dart2wasm under `dart test` takes no define, so the
+// browser tests are told the variant by a file instead.
 import 'dart:io';
 
 const _begin = '# --- tool/variant.dart: begin';
@@ -33,5 +37,8 @@ void main(List<String> args) {
         '    ripplefx_engine:\n      python: false\n$_end\n';
   }
   pubspec.writeAsStringSync('${text.trimRight()}\n');
+  File.fromUri(Platform.script.resolve('../out/variant.json'))
+    ..parent.createSync(recursive: true)
+    ..writeAsStringSync('{"variant": "${args.first}"}\n');
   stdout.writeln('variant: ${args.first}');
 }

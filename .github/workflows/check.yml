@@ -113,6 +113,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: The Flame example plays to its ending on an emulator
+        # The test takes seconds once installed; an emulator that never lets
+        # it start fails here rather than at the job's ceiling.
+        timeout-minutes: 15
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -188,3 +191,68 @@ jobs:
           cd example/flame_player
           dart run tool/prepare.dart
           flutter test integration_test -d "$udid"
+
+  # The web backend: the engine's components transpiled as the publish job
+  # does, and the suite in Chrome and Firefox under both web compilers, in
+  # both variants.
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [python, no-python]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tool/web/package-lock.json
+      - run: dart pub get
+      - run: dart run tool/engine.dart fetch --conformance --web
+      - name: The web backend's engine files
+        run: |
+          (cd tool/web && npm ci --ignore-scripts)
+          node tool/web/build.mjs
+      - run: dart run tool/variant.dart ${{ matrix.variant }}
+      # Firefox, unlike Chrome, will not start headless without a display.
+      - run: xvfb-run -a dart test -p chrome,firefox --compiler dart2js,dart2wasm
+
+  # The Flame example as a Flutter web app, under dart2js and --wasm, driven
+  # to its ending in Chrome with the variant's define.
+  flame-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tool/web/package-lock.json
+      - run: dart pub get && dart run tool/engine.dart fetch --conformance --web
+      - name: The web backend's engine files
+        run: |
+          (cd tool/web && npm ci --ignore-scripts)
+          node tool/web/build.mjs
+      - name: The Flame example plays to its ending in Chrome
+        working-directory: example/flame_player
+        run: |
+          dart run tool/prepare.dart
+          "$CHROMEWEBDRIVER/chromedriver" --port=4444 &
+          for build in "" "--wasm"; do
+            for python in true false; do
+              echo "::group::flutter drive --release $build, RIPPLEFX_PYTHON=$python"
+              flutter drive --release $build --dart-define=RIPPLEFX_PYTHON=$python \
+                --driver=test_driver/integration_test.dart \
+                --target=integration_test/story_test.dart \
+                -d web-server --browser-name=chrome --headless
+              echo "::endgroup::"
+            done
+          done

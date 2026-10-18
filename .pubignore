@@ -26,3 +26,8 @@ pubspec.lock
 /example/flame_player/.dart_tool/
 /example/flame_player/assets/campaign/
 /example/flame_player/pubspec.lock
+
+/tool/web/
+
+# A checkout's placeholders for the engine folders; the archive has the files.
+/lib/src/web/engine/**/.gitkeep

@@ -1,8 +1,7 @@
 import 'campaign.dart';
 import 'errors.dart';
-import 'interop/ripple.g.dart'
-    show RIPPLE_MIXER_DEFAULT_GAIN_STEP, RIPPLE_MIXER_DEFAULT_MAX_CUES;
 import 'mixer.dart';
+import 'mixer_types.dart';
 import 'records.dart';
 import 'speaker.dart';
 
@@ -17,8 +16,8 @@ final class SoundscapeDriver {
   SoundscapeDriver(
     this._campaign,
     this._speaker, {
-    int maxCues = RIPPLE_MIXER_DEFAULT_MAX_CUES,
-    double gainStep = RIPPLE_MIXER_DEFAULT_GAIN_STEP,
+    int maxCues = kDefaultMaxCues,
+    double gainStep = kDefaultGainStep,
     bool muted = false,
     Clock? now,
   }) : _mixer = Mixer(maxCues: maxCues, gainStep: gainStep),

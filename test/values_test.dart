@@ -1,12 +1,16 @@
 // A value through the arena and back, through the engine where it can be: an
 // Int at the edge of 64 bits, a Float that is not a number, a map in the
 // order it was written.
+@TestOn('vm')
+library;
+
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 import 'package:ripplefx_engine/ripplefx_engine.dart';
 import 'package:ripplefx_engine/src/interop/ripple.g.dart';
-import 'package:ripplefx_engine/src/value.dart' show readValue, writeValue;
+import 'package:ripplefx_engine/src/native/arena.dart'
+    show readValue, writeValue;
 import 'package:test/test.dart';
 
 void main() {

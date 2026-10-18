@@ -1,8 +1,3 @@
-import 'dart:ffi';
-
-import 'internal.dart';
-import 'interop/ripple.g.dart';
-
 /// What a call came to, by the engine's codes — and [reentrant], this
 /// binding's own, for a verb a `Player` was asked for while it was
 /// delivering.
@@ -114,8 +109,20 @@ sealed class RippleException implements Exception {
 
   String get message => failure.message;
 
+  // Literals, not runtimeType, which a release or obfuscated build renames.
   @override
-  String toString() => '$runtimeType: ${failure.message}';
+  String toString() {
+    final name = switch (this) {
+      BundleException() => 'BundleException',
+      NeedsPythonException() => 'NeedsPythonException',
+      HostException() => 'HostException',
+      ResumeException() => 'ResumeException',
+      InvalidArgumentException() => 'InvalidArgumentException',
+      EngineTrapException() => 'EngineTrapException',
+      ReentrantVerbException() => 'ReentrantVerbException',
+    };
+    return '$name: ${failure.message}';
+  }
 }
 
 /// A document of the bundle is malformed, missing, or from a newer engine.
@@ -167,34 +174,4 @@ final class EngineNotFoundException implements Exception {
   @override
   String toString() =>
       'EngineNotFoundException: $message${cause == null ? '' : ' ($cause)'}';
-}
-
-/// Throws what [error] holds when [code] is not success, and frees it.
-void checkResult(RippleResult code, Pointer<Pointer<RippleError>> error) {
-  if (code == RippleResult.RIPPLE_SUCCESS) return;
-  throw RippleException.of(takeFailure(code.value, error.value));
-}
-
-/// What the engine said, copied, and the engine's copy freed.
-Failure takeFailure(int code, Pointer<RippleError> error) {
-  final fallback = Failure(Code.of(code), 'the engine refused the call');
-  if (error == nullptr) return fallback;
-  final e = error.ref;
-  final message = readStr(e.message);
-  final failure = Failure(
-    fallback.code,
-    message.isEmpty ? fallback.message : message,
-    location: readStrOr(e.location),
-    found: e.found,
-    supported: e.supported,
-    oldest: e.oldest.present ? e.oldest.value : null,
-    asked: e.asked,
-    answered: e.answered,
-    offered: e.offered,
-    chosen: e.chosen,
-    subject: readStr(e.subject),
-    node: readStr(e.node),
-  );
-  ripple_free(error.cast());
-  return failure;
 }

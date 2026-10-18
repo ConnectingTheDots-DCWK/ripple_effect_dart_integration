@@ -28,6 +28,9 @@ import 'package:crypto/crypto.dart';
 const String kPython = 'python';
 const String kNoPython = 'no-python';
 
+/// The web component's target name, as the release's manifest spells it.
+const String kComponent = 'wasm32-component';
+
 /// The shared library a C archive carries for [triple]. iOS has one from
 /// engine 1.5.4; Emscripten never does, and is not a target of this binding.
 String libraryFor(String triple) => switch (triple) {
@@ -129,6 +132,23 @@ class EngineCache {
                   'library for iOS from engine 1.5.4; this pin is '
                   '${pin.engine}' : ''}',
       );
+    }
+    return unpacked;
+  }
+
+  /// The web component in [variant], unpacked: `lib/ripple_engine.wasm`,
+  /// the WIT it implements under `wit/`, and its `NOTICE`. What the web
+  /// backend's files are transpiled from (tool/web).
+  Future<Directory> component(String variant) async {
+    final file = pin.archive(kComponent, variant);
+    if (file == null) {
+      throw EngineUnavailable(
+        'engine ${pin.engine} publishes no $variant web component',
+      );
+    }
+    final unpacked = await _unpacked(_entry('$variant/$kComponent'), file);
+    if (!File('${unpacked.path}/lib/ripple_engine.wasm').existsSync()) {
+      throw EngineUnavailable('${file.name} holds no lib/ripple_engine.wasm');
     }
     return unpacked;
   }

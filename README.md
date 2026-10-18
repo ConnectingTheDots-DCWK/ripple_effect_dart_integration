@@ -10,11 +10,13 @@ soundscapes the editor plays.
 dart pub add ripplefx_engine        # or: flutter pub add ripplefx_engine
 ```
 
-**The engine comes with the build.** The package is pure Dart over
-`dart:ffi`; its build hook downloads the engine for the platform you build —
-Windows, macOS and Linux on x64 and arm64, Android on arm64 and x86_64, iOS
-on device and simulator — checks it against the digests this release pins,
-and bundles it with your program. Dart 3.10 or Flutter 3.38 and later.
+**Everywhere Dart runs.** Natively the package is pure Dart over `dart:ffi`,
+and its build hook downloads the engine for the platform you build — Windows,
+macOS and Linux on x64 and arm64, Android on arm64 and x86_64, iOS on device
+and simulator — checks it against the digests this release pins, and bundles
+it with your program. **On the web** the same API runs over the engine's
+WebAssembly component, which the package carries, under dart2js and
+`--wasm` alike. Dart 3.10 or Flutter 3.38 and later.
 
 **No speaker ships.** A story's soundscapes are scheduled by the engine and
 played by your audio — flame_audio, just_audio, SoLoud or your engine's own —
@@ -61,7 +63,8 @@ hooks:
       python: false
 ```
 
-Platforms, offline builds, opening a campaign from assets, and the web are in
+On the web, `--dart-define=RIPPLEFX_PYTHON=false` does the same. Platforms,
+offline builds, opening a campaign from assets, and the web are in
 [`doc/consuming.md`](https://github.com/ConnectingTheDots-DCWK/ripple_effect_dart_integration/blob/main/doc/consuming.md).
 
 **The engine is released on its own.** Each release of these bindings pins
@@ -73,9 +76,11 @@ contract, `MAJOR.MINOR`, and a `PATCH` of its own: 1.5.0 binds contract 1.5.
 ## Working on it
 
 ```sh
-dart run tool/engine.dart fetch --conformance       # the fixtures the suite plays
-dart test                                           # the pinned engine, with Python
-dart run tool/variant.dart no-python && dart test   # without (and `python` to go back)
+dart run tool/engine.dart fetch --conformance --web # the fixtures, and the web components
+(cd tool/web && npm ci) && node tool/web/build.mjs  # the web backend's engine files
+dart test                                           # native, the pinned engine with Python
+dart test -p chrome --compiler dart2js,dart2wasm    # the web backend
+dart run tool/variant.dart no-python && dart test   # without Python (and `python` to go back)
 ```
 
 Every conformance fixture of the engine release plays through `Session` and

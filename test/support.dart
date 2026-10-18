@@ -1,44 +1,102 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:ripplefx_engine/ripplefx_engine.dart';
 
-/// The conformance fixtures: a RIPPLE_ENGINE_TREE's own when one is set, as
-/// an `engine_tree` build is made from it, and the pinned release's
-/// otherwise (`dart run tool/engine.dart fetch --conformance`).
-String fixturesDirectory() {
-  final tree = Platform.environment['RIPPLE_ENGINE_TREE'];
-  if (tree != null && tree.isNotEmpty) {
-    return '$tree/packages/ripple_runtime/test/fixtures';
+import 'support/fixtures_io.dart'
+    if (dart.library.js_interop) 'support/fixtures_web.dart';
+
+export 'support/fixtures_io.dart'
+    if (dart.library.js_interop) 'support/fixtures_web.dart';
+
+/// A fixture's JSON file as a Value: a number with a point or an exponent
+/// is a Float, any other an Int — by its spelling, because under dart2js
+/// `jsonDecode('1.0')` is an `int` too.
+Future<Value> fixtureJson(String fixture, String file) async =>
+    _Json(await fixtureText(fixture, file)).document();
+
+final class _Json {
+  _Json(this.text);
+
+  final String text;
+  int at = 0;
+
+  Value document() {
+    final value = this.value();
+    _space();
+    if (at != text.length) throw FormatException('trailing text', text, at);
+    return value;
   }
-  final pin =
-      jsonDecode(File('engine.json').readAsStringSync())
-          as Map<String, Object?>;
-  final directory = 'out/engine/${pin['engine']}/conformance/fixtures';
-  if (!Directory(directory).existsSync()) {
-    throw StateError(
-      'no fixtures at $directory: run `dart run tool/engine.dart fetch '
-      '--conformance` first',
-    );
+
+  void _space() {
+    while (at < text.length && ' \t\r\n'.contains(text[at])) {
+      at++;
+    }
   }
-  return directory;
+
+  Value value() {
+    _space();
+    final c = text[at];
+    if (c == '{') {
+      at++;
+      final entries = <String, Value>{};
+      _space();
+      if (text[at] == '}') {
+        at++;
+        return MapValue(entries);
+      }
+      while (true) {
+        _space();
+        final key = (value() as TextValue).value;
+        _space();
+        at++; // :
+        entries[key] = value();
+        _space();
+        if (text[at++] == '}') return MapValue(entries);
+      }
+    }
+    if (c == '[') {
+      at++;
+      final items = <Value>[];
+      _space();
+      if (text[at] == ']') {
+        at++;
+        return ListValue(items);
+      }
+      while (true) {
+        items.add(value());
+        _space();
+        if (text[at++] == ']') return ListValue(items);
+      }
+    }
+    if (c == '"') {
+      final start = at;
+      at++;
+      while (text[at] != '"') {
+        at += text[at] == '\\' ? 2 : 1;
+      }
+      at++;
+      return TextValue(jsonDecode(text.substring(start, at)) as String);
+    }
+    for (final (word, value) in const [
+      ('true', BoolValue(true)),
+      ('false', BoolValue(false)),
+      ('null', NullValue()),
+    ]) {
+      if (text.startsWith(word, at)) {
+        at += word.length;
+        return value;
+      }
+    }
+    final start = at;
+    while (at < text.length && '+-0123456789.eE'.contains(text[at])) {
+      at++;
+    }
+    final number = text.substring(start, at);
+    return number.contains(RegExp('[.eE]'))
+        ? FloatValue(double.parse(number))
+        : IntValue(int.parse(number));
+  }
 }
-
-List<String> allFixtures() {
-  final names = [
-    for (final entry in Directory(fixturesDirectory()).listSync())
-      if (entry is Directory && File('${entry.path}/input.json').existsSync())
-        entry.path,
-  ]..sort();
-  return names;
-}
-
-String bundleOf(String fixture) => '${fixturesDirectory()}/$fixture/bundle';
-
-/// A JSON file as a Value: a number with a point or an exponent is a Float,
-/// any other an Int — which is what `jsonDecode` already decides.
-Value readJson(String path) =>
-    Value.from(jsonDecode(File(path).readAsStringSync()));
 
 /// A value as text that keeps what the fixtures assert: an Int and a Float of
 /// the same size differ, and an object's key order does not count. The Dart

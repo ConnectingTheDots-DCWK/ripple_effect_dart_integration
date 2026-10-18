@@ -52,6 +52,10 @@
       "wasm32-unknown-emscripten": {
         "file": "ripple-engine-c-1.5.4-wasm32-unknown-emscripten.tar.gz",
         "sha256": "28100adf5084067684eb177e826c477ca4a2d2298a38612d0baa8269f89a067d"
+      },
+      "wasm32-component": {
+        "file": "ripple-engine-1.5.4-wasm32-component.tar.gz",
+        "sha256": "85225a9d89c2872935c14551484a35b4d77482b1b5612ed8991081492a0ab768"
       }
     },
     "no-python": {
@@ -98,6 +102,10 @@
       "wasm32-unknown-emscripten": {
         "file": "ripple-engine-c-1.5.4-no-python-wasm32-unknown-emscripten.tar.gz",
         "sha256": "73bb5175b50f8a5a559311be0a0e700aee8b5969bf76fc4efdc97164030044d2"
+      },
+      "wasm32-component": {
+        "file": "ripple-engine-1.5.4-no-python-wasm32-component.tar.gz",
+        "sha256": "705bef5ea227545c4a5e82f4f92f319b2a9ac35ecffc7e848ec514a13d2867ff"
       }
     },
     "conformance": {

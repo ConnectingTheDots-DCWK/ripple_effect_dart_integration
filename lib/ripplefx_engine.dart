@@ -21,14 +21,17 @@
 /// plays a story's soundscapes through a [Speaker] of your own.
 library;
 
-export 'src/campaign.dart' show BundleFile, Campaign;
+export 'src/bundle_file.dart';
+export 'src/campaign.dart' show Campaign;
 export 'src/effects.dart';
-export 'src/engine.dart';
-export 'src/errors.dart' hide checkResult, takeFailure;
-export 'src/mixer.dart' show Mixer, Phase, VoiceCommand, VoiceKind;
+export 'src/engine.dart' show RippleEngine;
+export 'src/errors.dart';
+export 'src/mixer.dart' show Mixer;
+export 'src/mixer_types.dart' show Phase, VoiceCommand, VoiceKind;
 export 'src/player.dart';
 export 'src/records.dart';
-export 'src/session.dart';
+export 'src/session.dart' show Session;
+export 'src/session_types.dart';
 export 'src/soundscape_driver.dart';
 export 'src/speaker.dart' hide VoiceInbox, VoiceReport;
 export 'src/value.dart'

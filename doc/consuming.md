@@ -6,14 +6,15 @@ One package, and its build hook brings the engine:
 dart pub add ripplefx_engine        # or: flutter pub add ripplefx_engine
 ```
 
-Nothing else to install. **The engine is not in the package**: when your
-program is built — `dart run`, `dart test`, `dart build cli`, any `flutter
+Nothing else to install. **On a native platform the engine is not in the
+package**: when your program is built — `dart run`, `dart test`, `dart build cli`, any `flutter
 run` or `flutter build` — the package's build hook downloads the C archive of
 the engine release the package pins for the platform being built, checks its
 SHA-256 against `engine.json` (whose digests come from the release's signed
 manifest), and hands the library to the SDK, which bundles it beside your
 program the way it bundles any native asset. The download happens once per
-project and platform; later builds reuse it.
+project and platform; later builds reuse it. **On the web** it is: see *On
+the web* below.
 
 It needs **Dart 3.10 or Flutter 3.38** or later: the first that run build
 hooks without an experiment flag.
@@ -78,9 +79,8 @@ rather than from `VoiceSource.file`.
 
 Opening is a `Future` and everything after it is synchronous: a verb is
 arithmetic on a story, fast enough to call from a frame. **Opening is the one
-call that will need to wait on the web**, where the engine is a WebAssembly
-component to instantiate, and the API asks for the `await` now so that a
-program written today runs there unchanged when the web backend lands.
+call that waits on the web**, where the engine is a WebAssembly component to
+fetch, compile and instantiate; natively it answers at once.
 
 Everything a verb answers is a copy: effects, passages and values are Dart
 objects that outlive the session and the campaign. `Campaign`, `Session`,
@@ -122,11 +122,50 @@ the isolate that made it; one isolate at a time may use it.
 
 ## On the web
 
-**Not yet.** `dart:ffi` does not exist in a browser, so this backend cannot
-run there. The engine does — as the WebAssembly component the JavaScript
-binding, `@ripplefx/player`, plays in every browser — and a second backend
-over it, selected by a conditional import behind this same API, is the next
-release of these bindings.
+**The same API, over the engine's WebAssembly component.** `dart:ffi` has
+no browser, so a web build — Flutter's, with dart2js or with `--wasm`, or
+any other Dart web app — gets a second backend, chosen by a conditional
+import: `dart:js_interop` over the component every engine release ships, the
+one `@ripplefx/player` plays. The same conformance fixtures play through it,
+on dart2js and on dart2wasm, in both variants.
+
+- **The engine comes in the package.** The component's JavaScript glue and
+  its `.wasm` files are in `lib/src/web/engine/`, about 12 MB for the two
+  variants, of which a page downloads only the one it loads. A Flutter web
+  build carries them as assets (`assets/packages/ripplefx_engine/…`); they are
+  declared `platforms: [web]`, so a phone or desktop build carries none. Any
+  other Dart web build serves them from `packages/ripplefx_engine/src/web/engine/`
+  as it serves the package. To serve them from somewhere else — a CDN —
+  copy that folder there and call `await RippleEngine.load(base: …)` before
+  anything else.
+- **The variant is a define**, because no build hook runs for the web:
+  `--dart-define=RIPPLEFX_PYTHON=false` for the engine without Python, less
+  than half the download (about 4 MB to 8). Without it, a page loads the
+  engine with Python.
+- **Open a campaign from its files.** A browser has no folder to give, so
+  `Campaign.openDirectory` throws `UnsupportedError`; fetch the bundle, or
+  read it from your Flutter assets as `example/flame_player` does, and call
+  `Campaign.openFiles`. `mediaFile` is always null; a speaker plays a medium
+  from `mediaBytes` or from your assets by `VoiceSource.path`.
+- **`RippleEngine.load()` comes first.** Opening a campaign awaits it, but
+  `RippleEngine.version`, `hasPython`, a `Mixer` made on its own and
+  `Value.toStoryText` need it already loaded, and throw
+  `EngineNotFoundException` until it is.
+- **Each campaign runs in an engine instance of its own**, so a trap — an
+  engine panic, `EngineTrapException` — ruins only that campaign and its
+  sessions. Open it again and resume the last checkpoint.
+- **A 64-bit Int under dart2js.** The engine's Ints are 64 bits, and
+  dart2js's `int` is a JavaScript number, exact only to ±2^53: an Int beyond
+  that rounds to the nearest double on the way in. dart2wasm's `int` has 64
+  bits and is exact, as every native platform is. A story that counts past
+  nine quadrillion wants `flutter build web --wasm`. For the same reason
+  `Value.from(7.0)` is an Int on dart2js; build a Float as `FloatValue(7.0)`.
+- **A Content Security Policy** must allow the engine to compile:
+  `script-src 'wasm-unsafe-eval'`, and the engine's files from wherever they
+  are served.
+- **A speaker on the web** is usually Web Audio; the JS binding's
+  `@ripplefx/soundscape` is a whole `WebAudioSpeaker` to model one on, and
+  `example/flame_player`'s flame_audio speaker runs in the browser as it is.
 
 ## The engine's notice
 

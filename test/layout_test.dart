@@ -10,6 +10,9 @@
 // generated accessor, into zeroed memory, and the first byte that changed is
 // where the field begins. A nested record is written through its first
 // field, with the offsets summed.
+@TestOn('vm')
+library;
+
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
