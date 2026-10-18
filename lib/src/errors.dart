@@ -109,8 +109,20 @@ sealed class RippleException implements Exception {
 
   String get message => failure.message;
 
+  // Literals, not runtimeType, which a release or obfuscated build renames.
   @override
-  String toString() => '$runtimeType: ${failure.message}';
+  String toString() {
+    final name = switch (this) {
+      BundleException() => 'BundleException',
+      NeedsPythonException() => 'NeedsPythonException',
+      HostException() => 'HostException',
+      ResumeException() => 'ResumeException',
+      InvalidArgumentException() => 'InvalidArgumentException',
+      EngineTrapException() => 'EngineTrapException',
+      ReentrantVerbException() => 'ReentrantVerbException',
+    };
+    return '$name: ${failure.message}';
+  }
 }
 
 /// A document of the bundle is malformed, missing, or from a newer engine.
