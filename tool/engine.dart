@@ -17,7 +17,7 @@ import 'dart:convert';
 import 'dart:ffi' show Abi;
 import 'dart:io';
 
-import '../hook/engine.dart';
+import 'package:ripplefx_engine/src/engine_release.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty || args.first != 'fetch') {

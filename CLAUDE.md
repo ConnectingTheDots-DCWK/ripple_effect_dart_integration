@@ -22,7 +22,7 @@ ecosystem it is for first**: `example/flame_player` is the proof, and a
 | `lib/src/native/` | The `dart:ffi` backend: `Campaign`, `Session`, `Mixer`, `RippleEngine` over the C ABI. `from.dart` reads the engine's structs into records; `arena.dart`, `internal.dart`, `call.dart` and `check.dart` lay arguments out and read answers and failures back. |
 | `lib/src/web/` | The web backend, the same classes over the component: `js.dart` (the bridge, one engine instance and its calls, the BigInt conversions, WIT failures as `Failure`), `from.dart` and `to.dart` (jco's objects to records and back), `tables.dart` (the WIT's names in the C header's order, pure Dart so a VM test holds them). `engine/` is **generated and never committed**, but for a `.gitkeep` per folder: jco's glue and `.wasm` per variant, `wasi.js`, `bridge.js`, `NOTICE`. |
 | `lib/src/interop/ripple.g.dart` | **Generated**: the header as `@Native` functions resolved by asset id, by ffigen, C names kept. Never edited; `tool/generate` rewrites it. |
-| `hook/build.dart`, `hook/engine.dart` | The build hook: the pinned C archive for the platform being built, downloaded into the hook's shared output and checked against `engine.json`, or an `engine_dir`/`engine_tree` user-define's library; handed to the SDK as a `CodeAsset`. `engine.dart` is the pin and the verified cache, shared with `tool/engine.dart`. |
+| `hook/build.dart`, `lib/src/engine_release.dart` | The build hook: the pinned C archive for the platform being built, downloaded into the hook's shared output and checked against `engine.json`, or an `engine_dir`/`engine_tree` user-define's library; handed to the SDK as a `CodeAsset`. `engine_release.dart` is the pin and the verified cache, shared with `tool/engine.dart`; no exported library imports it. |
 | `engine.json`, `engine-signing.pub`, `scripts/pin-engine.sh` | The pin and its trust anchor, the same files as the C/C++ and C# bindings'. |
 | `tool/engine.dart` | Fetches the conformance fixtures and any target's archive into `out/engine/<engine>/`, through the hook's cache code. |
 | `tool/variant.dart` | Writes, or removes, the `python: false` user-define at the end of the root pubspec — the one place the hooks runner reads one from — and writes `out/variant.json`, which the browser suite reads instead. |
@@ -57,6 +57,7 @@ RIPPLE_VARIANT=python dart test
 dart run tool/variant.dart no-python && RIPPLE_VARIANT=no-python dart test
 dart run tool/variant.dart python                      # never commit the block
 dart test -p chrome,firefox --compiler dart2js,dart2wasm   # the web backend, after tool/variant.dart in each variant
+bash scripts/check-pub-dev.sh   # the archive as pub.dev's server reads it, after tool/web/build.mjs
 dart format --set-exit-if-changed --output=none . && dart analyze --fatal-infos
 (cd tool/generate && dart run bin/generate.dart) && git diff --exit-code lib/src/interop test/layout*
 bash scripts/check-android.sh python && bash scripts/check-android.sh no-python
@@ -196,6 +197,13 @@ loading the other engine than `out/variant.json` asks for (`variant_test`).
   correct APK. `check-android.sh` compares `.text` and `.rodata` through
   `llvm-objcopy`, which a strip never touches and in which the variants
   differ.
+- **pub.dev takes `hook/build.dart` and nothing else in `hook/`.** The
+  1.5.0 tag's publish was refused by the server — *Hook files are
+  experimental and `hook/engine.dart` is not allowed yet* — after a dry run
+  with 0 warnings: the dry run does not ask the server. A helper the hook
+  imports lives under `lib/src/`, imported by no exported library.
+  `scripts/check-pub-dev.sh` runs pub-dev's own archive reader, pinned, in
+  CI and before the upload: it is what saw this, and the dry run is not.
 - **A `.pubignore` replaces `.gitignore`**, so every pattern `.gitignore`
   names is repeated there, `/` anchors kept, or pub publishes `out/` with an
   engine in it.
