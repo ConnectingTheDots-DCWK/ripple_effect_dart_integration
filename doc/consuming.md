@@ -94,9 +94,13 @@ the isolate that made it; one isolate at a time may use it.
 - **Windows** (x64, arm64): `ripple_effect_engine.dll`, built against the
   dynamic CRT.
 - **macOS** (arm64, x64), 12.0 and up: one library per architecture; a
-  universal Flutter app takes both. Engine 1.5.4 or later: the SDK renames
-  the library as it bundles it, and 1.5.3's had no room in its header for
-  that.
+  universal Flutter app takes both, wrapped into a framework with an `@rpath`
+  install name. Engine 1.5.4 or later: the SDK renames the library as it
+  bundles it, and 1.5.3's had no room in its header for that. No special
+  entitlement is needed — a campaign opened from the app's assets reaches
+  neither the network nor a sandbox-guarded file. A plugin whose pod keeps
+  Flutter's old 10.14 default is pinned up to the app's target in a
+  `post_install` hook, as the example's `macos/Podfile` shows.
 - **Linux** (x64, arm64): glibc 2.35 and up. A distribution that is not glibc
   — Alpine's musl — has no engine build.
 - **Android** (arm64, x86_64 for the emulator), API 24 and up: Flutter packs
@@ -107,8 +111,14 @@ the isolate that made it; one isolate at a time may use it.
   leaves that ABI out.
 - **iOS** (device and Apple-silicon simulator), 13.0 and up: the engine's
   shared library, which engine 1.5.4 added to the iOS archives for this
-  binding, wrapped by Flutter into a framework. The Intel simulator has no
-  engine build.
+  binding, wrapped by Flutter into a framework with an `@rpath` install name.
+  The Intel simulator has no engine build. No special entitlement is needed —
+  a campaign opened from the app's assets reaches neither the network nor a
+  sandbox-guarded file. Xcode 15 and later reject an iOS **simulator**
+  deployment target below 15.0 (a toolchain floor, not the engine's), so an
+  app built with a recent Xcode sets `IPHONEOS_DEPLOYMENT_TARGET` to 15.0 or
+  more, and pins any plugin pod that keeps an older default up to it in a
+  `post_install` hook, as the example's `ios/Podfile` shows.
 
 ## On the web
 

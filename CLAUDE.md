@@ -53,9 +53,17 @@ dart run tool/variant.dart python                      # never commit the block
 dart format --set-exit-if-changed --output=none . && dart analyze --fatal-infos
 (cd tool/generate && dart run bin/generate.dart) && git diff --exit-code lib/src/interop test/layout*
 bash scripts/check-android.sh python && bash scripts/check-android.sh no-python
+bash scripts/check-ios.sh python && bash scripts/check-ios.sh no-python   # on macOS
 (cd example/flame_player && dart run tool/prepare.dart && flutter test integration_test -d <device>)
 dart pub publish --dry-run                             # zero warnings, or the publish job fails
 ```
+
+`<device>` is `linux`, `macos`, an Android emulator or a booted iOS simulator;
+each plays the-choir to its ending through the bundled engine. `check-ios.sh`
+is the iOS analogue of `check-android.sh` — it holds the device app's
+`ripple_effect_engine.framework` to the pinned engine's `aarch64-apple-ios`
+build. The simulator is held by the integration test rather than that script,
+for the reason in the traps below.
 
 The suite plays every conformance fixture of the pinned release through
 `Session` and through `Player`, in the variant configured: 24 with Python, 21
@@ -70,7 +78,9 @@ seen red: a passage's title written into its text (every fixture, both
 hosts); one `uint32_t` field of `RippleRunPlace` widened in the bindings (the
 layout test, naming the size of it and of `RippleRunEvent`); the variant
 test run against the other engine; `check-android.sh`'s first, byte-for-byte
-version, which no APK could pass (below).
+version, which no APK could pass (below); `check-ios.sh` with the engine left
+out — an `engine_dir` at an empty folder — so the build hook throws and the
+build, and the script, go red.
 
 ## The decisions
 
@@ -174,6 +184,23 @@ version, which no APK could pass (below).
 - **The Flame example on a Linux desktop needs gstreamer's headers**
   (`libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`), for
   audioplayers; without them `flutter build linux` fails in CMake.
+- **Xcode enforces a deployment-target floor, and a pod ignores the app's.**
+  Xcode 15+ refuses a macOS target below 12.0 or an iOS **simulator** target
+  below 15.0 (`supported deployment target versions is …`), and
+  `flutter_additional_*_build_settings` only raises a pod to Flutter's old
+  default (10.14 / 12.0), so a plugin pod like `audioplayers_darwin` keeps a
+  target Xcode rejects and the build fails before it links. The example's
+  `macos/Podfile` and `ios/Podfile` declare the floor (`platform`) and a
+  `post_install` hook pins every pod target to it; the iOS floor is 15.0, the
+  macOS 12.0, both above the engine's own 13.0/Monterey. `flutter create`'s
+  runner also writes the old floor into `project.pbxproj` — raise it there too.
+- **The engine ships an arm64 iOS simulator slice only**
+  (`aarch64-apple-ios-sim`; there is no x86_64 one), so `flutter build ios
+  --simulator` — which builds a fat app for every simulator architecture —
+  asks for an engine that does not exist and fails. `check-ios.sh` therefore
+  builds and statically checks the **device** app only; the simulator is held
+  by the integration test, which targets one booted arm64 simulator and so
+  takes just the slice there is. On an Intel Mac there is no simulator story.
 
 ## Releasing
 

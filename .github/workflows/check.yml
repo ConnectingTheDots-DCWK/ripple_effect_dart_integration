@@ -1,7 +1,8 @@
 # The bindings, on every push and pull request: the pin, the generated
 # interop, the suite on every desktop platform in both variants and on the
-# lowest SDK the package claims, the Flame example on an Android emulator,
-# and the same example on a Linux desktop. Free GitHub runners: this
+# lowest SDK the package claims, the Flame example on an Android emulator, on
+# a Linux desktop, on macOS, and on an iOS simulator — plus the iOS device app
+# held to the pinned engine in both variants. Free GitHub runners: this
 # repository is public.
 
 name: Check
@@ -141,3 +142,49 @@ jobs:
         run: |
           dart run tool/prepare.dart
           xvfb-run -a flutter test integration_test -d linux
+
+  flame-macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: dart pub get && dart run tool/engine.dart fetch --conformance
+      - name: The Flame example plays to its ending on macOS
+        working-directory: example/flame_player
+        run: |
+          dart run tool/prepare.dart
+          flutter test integration_test -d macos
+
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # The app embeds the engine as ripple_effect_engine.framework; it must be
+      # the pinned engine's iOS device build, in both variants. The simulator
+      # slice the engine ships is arm64 only, so it is proved by the
+      # integration test below rather than a fat `flutter build ios
+      # --simulator`; scripts/check-ios.sh says why.
+      - name: The iOS device app carries the pinned engine, in both variants
+        run: |
+          bash scripts/check-ios.sh no-python
+          bash scripts/check-ios.sh python
+      - name: The Flame example plays to its ending on a simulator
+        run: |
+          dart run tool/engine.dart fetch --conformance
+          udid="$(xcrun simctl list devices available | awk -F'[()]' '/iPhone/{print $2; exit}')"
+          [ -n "$udid" ] || { echo "no available iPhone simulator on this runner"; exit 1; }
+          xcrun simctl boot "$udid" || true
+          xcrun simctl bootstatus "$udid" -b
+          cd example/flame_player
+          dart run tool/prepare.dart
+          flutter test integration_test -d "$udid"
