@@ -20,7 +20,7 @@ ecosystem it is for first**: `example/flame_player` is the proof, and a
 | --- | --- |
 | `lib/ripplefx_engine.dart`, `lib/src/*.dart` | The shared half, with no backend in it: the records, the sealed `Effect` and `Value` hierarchies, the exceptions, the session's and the mixer's plain types, `Speaker`/`Voice`, `SoundscapeDriver`, `Player`. `campaign.dart`, `session.dart`, `mixer.dart`, `engine.dart` and `story_text.dart` are one-line facades: `export 'native/x.dart' if (dart.library.js_interop) 'web/x.dart'`. |
 | `lib/src/native/` | The `dart:ffi` backend: `Campaign`, `Session`, `Mixer`, `RippleEngine` over the C ABI. `from.dart` reads the engine's structs into records; `arena.dart`, `internal.dart`, `call.dart` and `check.dart` lay arguments out and read answers and failures back. |
-| `lib/src/web/` | The web backend, the same classes over the component: `js.dart` (the bridge, one engine instance and its calls, the BigInt conversions, WIT failures as `Failure`), `from.dart` and `to.dart` (jco's objects to records and back), `tables.dart` (the WIT's names in the C header's order, pure Dart so a VM test holds them). `engine/` is **generated and never committed**: jco's glue and `.wasm` per variant, `wasi.js`, `bridge.js`, `NOTICE`. |
+| `lib/src/web/` | The web backend, the same classes over the component: `js.dart` (the bridge, one engine instance and its calls, the BigInt conversions, WIT failures as `Failure`), `from.dart` and `to.dart` (jco's objects to records and back), `tables.dart` (the WIT's names in the C header's order, pure Dart so a VM test holds them). `engine/` is **generated and never committed**, but for a `.gitkeep` per folder: jco's glue and `.wasm` per variant, `wasi.js`, `bridge.js`, `NOTICE`. |
 | `lib/src/interop/ripple.g.dart` | **Generated**: the header as `@Native` functions resolved by asset id, by ffigen, C names kept. Never edited; `tool/generate` rewrites it. |
 | `hook/build.dart`, `hook/engine.dart` | The build hook: the pinned C archive for the platform being built, downloaded into the hook's shared output and checked against `engine.json`, or an `engine_dir`/`engine_tree` user-define's library; handed to the SDK as a `CodeAsset`. `engine.dart` is the pin and the verified cache, shared with `tool/engine.dart`. |
 | `engine.json`, `engine-signing.pub`, `scripts/pin-engine.sh` | The pin and its trust anchor, the same files as the C/C++ and C# bindings'. |
@@ -254,8 +254,18 @@ loading the other engine than `out/variant.json` asks for (`variant_test`).
   declares its own `operator []` on `JSAny?` and loses that import resolves
   the call to itself, and recurses until the stack runs out.
 - **The web engine is gitignored and must not be pubignored.** `.gitignore`
-  names `lib/src/web/engine/`; `.pubignore`, which replaces it for pub,
-  deliberately does not, or a published package would have no web engine.
+  names the files under `lib/src/web/engine/`; `.pubignore`, which replaces
+  it for pub, deliberately does not, or a published package would have no
+  web engine. The three folders are committed as a `.gitkeep` each, which
+  `.pubignore` does name: the pubspec declares them as assets, and on a
+  fresh checkout `dart analyze` warned `asset_directory_does_not_exist` —
+  failing `--fatal-infos` in CI — and every Flutter build printed `Error:`
+  for each. `.gitignore` names the files by kind because pub's reading of it
+  ignores a `!` re-include: ignoring the folder and re-including the
+  `.gitkeep` cost a dry-run warning.
+- **Firefox will not start without a display**, headless or not: CI runs
+  the web suite under `xvfb-run`. Locally, Playwright's build works:
+  `FIREFOX_EXECUTABLE=~/.cache/ms-playwright/firefox-*/firefox/firefox`.
 - **A browser test page sits one level down.** `dart test -p chrome` serves
   the package root at `../` from the test page, and the package's `lib/` at
   `../packages/ripplefx_engine/` — not at `packages/`, where a webdev app

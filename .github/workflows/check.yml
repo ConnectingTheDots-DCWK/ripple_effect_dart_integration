@@ -113,6 +113,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: The Flame example plays to its ending on an emulator
+        # The test takes seconds once installed; an emulator that never lets
+        # it start fails here rather than at the job's ceiling.
+        timeout-minutes: 15
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -214,7 +217,8 @@ jobs:
           (cd tool/web && npm ci --ignore-scripts)
           node tool/web/build.mjs
       - run: dart run tool/variant.dart ${{ matrix.variant }}
-      - run: dart test -p chrome,firefox --compiler dart2js,dart2wasm
+      # Firefox, unlike Chrome, will not start headless without a display.
+      - run: xvfb-run -a dart test -p chrome,firefox --compiler dart2js,dart2wasm
 
   # The Flame example as a Flutter web app, under dart2js and --wasm, driven
   # to its ending in Chrome with the variant's define.

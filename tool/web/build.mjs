@@ -1,5 +1,6 @@
 // The web backend's engine files, into lib/src/web/engine/ — generated, never
-// committed, and published (.gitignore names them, .pubignore does not):
+// committed but for the empty .gitkeep in each folder, and published
+// (.gitignore names them, .pubignore does not):
 //
 //   <variant>/engine.js           jco's glue, in async instantiation
 //   <variant>/engine.core*.wasm   the core modules lib/src/web/ loads
@@ -70,4 +71,7 @@ await build({
   logLevel: 'warning',
 });
 copyFileSync(join(here, 'bridge.js'), join(out, 'bridge.js'));
+// The placeholders a checkout has, so that the pubspec's asset folders exist
+// before anything is generated into them.
+for (const dir of ['', 'python', 'no-python']) writeFileSync(join(out, dir, '.gitkeep'), '');
 console.log(`web: engine ${engine}'s components, into ${out}`);
