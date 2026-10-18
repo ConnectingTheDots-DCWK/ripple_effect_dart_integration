@@ -13,6 +13,8 @@ import 'package:test/test.dart';
 import 'support.dart';
 
 void main() {
+  setUpAll(setUpEngine);
+
   test('a soundscape played opens its voice and fades it in', () async {
     final rig = await _Rig.open();
     addTearDown(rig.dispose);
@@ -230,7 +232,7 @@ final class _Rig {
 
   static Future<_Rig> open({int latency = 0}) async {
     final log = _Recording()..latency = latency;
-    final campaign = await Campaign.openDirectory(bundleOf('the-choir'));
+    final campaign = await openFixture('the-choir');
     return _Rig._(
       log,
       campaign,

@@ -26,3 +26,5 @@ pubspec.lock
 /example/flame_player/.dart_tool/
 /example/flame_player/assets/campaign/
 /example/flame_player/pubspec.lock
+
+/tool/web/

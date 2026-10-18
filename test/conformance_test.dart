@@ -12,6 +12,8 @@ import 'support.dart';
 const int _stepBudget = 65536;
 
 void main() {
+  setUpAll(setUpEngine);
+
   test(
     'every fixture plays through the session',
     () => _playAll(player: false),
@@ -29,17 +31,16 @@ Future<void> _playAll({required bool player}) async {
   final python = RippleEngine.hasPython;
   var played = 0;
   var skipped = 0;
-  for (final fixture in allFixtures()) {
-    final name = fixture.split('/').last;
-    final input = readJson('$fixture/input.json');
+  for (final name in await fixtureNames()) {
+    final input = await fixtureJson(name, 'input.json');
     if (_needsPython(input) && !python) {
       skipped++;
       continue;
     }
     _compare(
       name,
-      await _play(fixture, input, player: player),
-      readJson('$fixture/expect.json'),
+      await _play(name, input, player: player),
+      await fixtureJson(name, 'expect.json'),
     );
     played++;
   }
@@ -98,7 +99,7 @@ Future<_Played> _play(
   Value input, {
   required bool player,
 }) async {
-  final campaign = await Campaign.openDirectory('$fixture/bundle');
+  final campaign = await openFixture(fixture);
   try {
     final manifest = campaign.manifest;
     final played = _Played();

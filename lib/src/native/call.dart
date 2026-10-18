@@ -2,8 +2,8 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 
-import 'errors.dart';
-import 'interop/ripple.g.dart';
+import '../interop/ripple.g.dart';
+import 'check.dart';
 
 /// The engine call every reader and verb makes: an out-pointer the engine
 /// fills with memory it owns, read by [read] into this binding's records and

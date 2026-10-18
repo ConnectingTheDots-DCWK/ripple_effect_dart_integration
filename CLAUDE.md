@@ -1,9 +1,11 @@
 # ripple_effect_dart_integration
 
-The Dart bindings of the Ripple Effect engine: `dart:ffi` over the engine's C
-ABI, generated from its header, and a Dart layer over it, published to
-pub.dev as `ripplefx_engine`, with the engine itself brought by a build hook
-rather than shipped in the package. **The engine is not built here.** It is
+The Dart bindings of the Ripple Effect engine, published to pub.dev as
+`ripplefx_engine`: one API over **two backends**, picked by a conditional
+import. Natively, `dart:ffi` over the engine's C ABI, generated from its
+header, with the engine brought by a build hook rather than shipped in the
+package. On the web, `dart:js_interop` over the engine's WebAssembly
+component, which the package does carry, generated at publish time. **The engine is not built here.** It is
 released from the private `ripple_effect` repository as `engine-v<version>`
 in the public `ripple_engine_releases`, and this repository pins one
 (`engine.json`). Why the C ABI is shaped as it is lives in that repository,
@@ -16,14 +18,17 @@ ecosystem it is for first**: `example/flame_player` is the proof, and a
 
 | | |
 | --- | --- |
-| `lib/ripplefx_engine.dart`, `lib/src/` | The bindings: `Campaign`, `Session`, the sealed `Effect` and `Value` hierarchies, the records, the exceptions, `Mixer`, `Speaker`/`Voice`, `SoundscapeDriver`, `Player`. `from.dart` reads the engine's structs into records; `value.dart`, `internal.dart` and `call.dart` lay arguments out and read answers back. |
+| `lib/ripplefx_engine.dart`, `lib/src/*.dart` | The shared half, with no backend in it: the records, the sealed `Effect` and `Value` hierarchies, the exceptions, the session's and the mixer's plain types, `Speaker`/`Voice`, `SoundscapeDriver`, `Player`. `campaign.dart`, `session.dart`, `mixer.dart`, `engine.dart` and `story_text.dart` are one-line facades: `export 'native/x.dart' if (dart.library.js_interop) 'web/x.dart'`. |
+| `lib/src/native/` | The `dart:ffi` backend: `Campaign`, `Session`, `Mixer`, `RippleEngine` over the C ABI. `from.dart` reads the engine's structs into records; `arena.dart`, `internal.dart`, `call.dart` and `check.dart` lay arguments out and read answers and failures back. |
+| `lib/src/web/` | The web backend, the same classes over the component: `js.dart` (the bridge, one engine instance and its calls, the BigInt conversions, WIT failures as `Failure`), `from.dart` and `to.dart` (jco's objects to records and back), `tables.dart` (the WIT's names in the C header's order, pure Dart so a VM test holds them). `engine/` is **generated and never committed**: jco's glue and `.wasm` per variant, `wasi.js`, `bridge.js`, `NOTICE`. |
 | `lib/src/interop/ripple.g.dart` | **Generated**: the header as `@Native` functions resolved by asset id, by ffigen, C names kept. Never edited; `tool/generate` rewrites it. |
 | `hook/build.dart`, `hook/engine.dart` | The build hook: the pinned C archive for the platform being built, downloaded into the hook's shared output and checked against `engine.json`, or an `engine_dir`/`engine_tree` user-define's library; handed to the SDK as a `CodeAsset`. `engine.dart` is the pin and the verified cache, shared with `tool/engine.dart`. |
 | `engine.json`, `engine-signing.pub`, `scripts/pin-engine.sh` | The pin and its trust anchor, the same files as the C/C++ and C# bindings'. |
 | `tool/engine.dart` | Fetches the conformance fixtures and any target's archive into `out/engine/<engine>/`, through the hook's cache code. |
-| `tool/variant.dart` | Writes, or removes, the `python: false` user-define at the end of the root pubspec — the one place the hooks runner reads one from. |
+| `tool/variant.dart` | Writes, or removes, the `python: false` user-define at the end of the root pubspec — the one place the hooks runner reads one from — and writes `out/variant.json`, which the browser suite reads instead. |
+| `tool/web/` | Node, pinned by its lockfile: `build.mjs` transpiles the pinned components with jco into `lib/src/web/engine/`, bundles preview2-shim's WASI imports with esbuild into `wasi.js`, and copies `bridge.js`, the backend's JavaScript half. Never published. |
 | `tool/generate/` | The generator, **a package of its own**: ffigen over the pinned header, then clang's record layouts into `test/layout.json` and a write probe per field into `test/layout.g.dart`. |
-| `test/` | `package:test`: conformance through `Session` and `Player`, the driver, values, lifetimes, the variant, the layout. |
+| `test/` | `package:test`, on the VM and in a browser: conformance through `Session` and `Player`, the driver, lifetimes and the variant on both backends; the layout, the native arena and the web tables (`tables_test.dart`) on the VM; the web arena and the 64-bit Int on the web. `support/fixtures_{io,web}.dart` read a fixture from disk or over HTTP. |
 | `example/ripplefx_engine_example.dart` | A terminal player over any bundle folder; pub.dev's example. |
 | `example/flame_player/` | A Flutter + Flame game playing a campaign from its assets, with an example speaker over flame_audio; `tool/prepare.dart` copies a bundle in, `integration_test/` plays it to its ending on a device. |
 | `scripts/check-android.sh` | The Flame example's APK, held to the pinned engine's Android builds in a variant. |
@@ -46,15 +51,20 @@ variants (`tool/pre_push.sh`).
 ## Verifying a change
 
 ```sh
-dart run tool/engine.dart fetch --conformance          # the fixtures, once per pin
+dart run tool/engine.dart fetch --conformance --web    # the fixtures and the components, once per pin
+(cd tool/web && npm ci) && node tool/web/build.mjs     # the web backend's engine files
 RIPPLE_VARIANT=python dart test
 dart run tool/variant.dart no-python && RIPPLE_VARIANT=no-python dart test
 dart run tool/variant.dart python                      # never commit the block
+dart test -p chrome,firefox --compiler dart2js,dart2wasm   # the web backend, after tool/variant.dart in each variant
 dart format --set-exit-if-changed --output=none . && dart analyze --fatal-infos
 (cd tool/generate && dart run bin/generate.dart) && git diff --exit-code lib/src/interop test/layout*
 bash scripts/check-android.sh python && bash scripts/check-android.sh no-python
 bash scripts/check-ios.sh python && bash scripts/check-ios.sh no-python   # on macOS
 (cd example/flame_player && dart run tool/prepare.dart && flutter test integration_test -d <device>)
+(cd example/flame_player && flutter drive --release [--wasm] [--dart-define=RIPPLEFX_PYTHON=false] \
+   --driver=test_driver/integration_test.dart --target=integration_test/story_test.dart \
+   -d web-server --browser-name=chrome --headless)     # with chromedriver on :4444
 dart pub publish --dry-run                             # zero warnings, or the publish job fails
 ```
 
@@ -73,14 +83,16 @@ nothing the engine handed out is left over, holds the driver to the
 scheduler on a recording speaker and a numeric clock, compares Dart's layout
 of all 68 structs with clang's, holds a disposed handle to refusing a call
 and a campaign opened from its files to one opened from its folder.
-Eighty-six tests in all. **A test has to be able to fail**, and these were
-seen red: a passage's title written into its text (every fixture, both
+Ninety-six on the VM, and seventeen in a browser on each compiler. **A test
+has to be able to fail**, and these were seen red: a passage's title written into its text (every fixture, both
 hosts); one `uint32_t` field of `RippleRunPlace` widened in the bindings (the
 layout test, naming the size of it and of `RippleRunEvent`); the variant
 test run against the other engine; `check-android.sh`'s first, byte-for-byte
 version, which no APK could pass (below); `check-ios.sh` with the engine left
 out — an `engine_dir` at an empty folder — so the build hook throws and the
-build, and the script, go red.
+build, and the script, go red; on the web, a passage's title written into
+its text by the web reader (conformance, dart2wasm), and the web suite
+loading the other engine than `out/variant.json` asks for (`variant_test`).
 
 ## The decisions
 
@@ -108,9 +120,31 @@ build, and the script, go red.
   a verb returns. `RippleEngine.outstanding` is zero whenever no call is in
   flight, and a test holds it there.
 - **Opening a campaign is a `Future`; everything after it is synchronous.**
-  Nothing native needs the wait, but the web backend will — its engine is a
-  WebAssembly component to instantiate — and asking for the `await` now is
-  what lets 1.5.1 add the web without breaking a caller.
+  Nothing native needs the wait; the web does — its engine is a component to
+  fetch, compile and instantiate — and every WIT export is synchronous, so
+  instantiation is the only await there is. `RippleEngine.load({base})` is
+  the same wait made explicit, a no-op natively.
+- **The web is a second backend, not a second API.** The facades pick it by
+  `dart.library.js_interop`, and the shared half — records, effects, values,
+  errors, `Player`, `SoundscapeDriver` — imports no backend. What the two
+  must agree on and cannot read from each other is held on the VM:
+  `tables_test.dart` checks the web's WIT names against the C enums, and the
+  web's constant `SessionOptions()` against `ripple_session_options_default`.
+- **The web engine ships in the package**, about 12 MB for both variants and
+  2 MB compressed, generated by `tool/web` when publishing and never
+  committed (it is the Runtime Licence's, not MIT's). Declared as Flutter
+  assets with `platforms: [web]`, so only a web build carries them; a
+  non-Flutter web build reaches them at `packages/ripplefx_engine/src/web/engine/`.
+- **One engine instance per campaign on the web**, as the JS binding does:
+  the core modules are compiled once per page, an instance is made per
+  campaign, and a trap poisons only that one. A page-wide instance answers
+  `version`, `hasPython`, a standalone `Mixer` and `toStoryText`.
+- **Every web engine call goes through `bridge.js`'s `invoke`**, which
+  catches what jco throws and answers a plain `{ok, value | payload | trap}`
+  — see the trap below for why it cannot be a Dart `catch`.
+- **The web variant is a compile-time define**, `RIPPLEFX_PYTHON`, because
+  no hook runs for the web; dart2js's 64-bit Ints round beyond ±2^53, and
+  that is documented rather than worked round with `BigInt`.
 - **Sealed hierarchies for `switch`.** `Effect` has `Turn` and `Over` as
   sealed middles, so `switch (batch.last)` is exhaustive over the Turns;
   `Value` is a sealed class per kind, so a pattern reads an Int as an Int.
@@ -202,13 +236,43 @@ build, and the script, go red.
   by the integration test, which targets one booted arm64 simulator and so
   takes just the slice there is. On an Intel Mac there is no simulator story.
 
+- **Under dart2wasm a caught JavaScript exception is opaque.** A jco
+  `ComponentError` reaches a Dart `catch` as a `_JavaScriptError` whose
+  `payload` cannot be read, where dart2js hands over the `JSObject`. So the
+  catching is done in JavaScript, by `bridge.js`, on both compilers.
+- **`dart test` passes no define to dart2wasm.** dart2js takes a hidden
+  `--dart2js-args`; dart2wasm takes nothing. So the browser suite cannot use
+  `RIPPLEFX_PYTHON`: it reads `out/variant.json`, which `tool/variant.dart`
+  writes, and sets the backend's `debugPython`.
+- **`jsonDecode('1.0')` is an `int` under dart2js**, where an `int` and a
+  `double` are one type, so a fixture read with it loses every Float. The
+  suite parses its JSON by the number's spelling (`support.dart`), and
+  `Value.from(7.0)` is documented as an Int there.
+- **dart2js cannot compile a 64-bit literal.** `4611686018427387905` in
+  source fails the compile outright; a test parses it from a string.
+- **A `JSObject` has no `[]` without `dart:js_interop_unsafe`.** A file that
+  declares its own `operator []` on `JSAny?` and loses that import resolves
+  the call to itself, and recurses until the stack runs out.
+- **The web engine is gitignored and must not be pubignored.** `.gitignore`
+  names `lib/src/web/engine/`; `.pubignore`, which replaces it for pub,
+  deliberately does not, or a published package would have no web engine.
+- **A browser test page sits one level down.** `dart test -p chrome` serves
+  the package root at `../` from the test page, and the package's `lib/` at
+  `../packages/ripplefx_engine/` — not at `packages/`, where a webdev app
+  finds it, which is why the suite passes `RippleEngine.load(base:)`.
+- **On the web the engine-level getters need `load()` first.** A Flutter
+  test that reads `RippleEngine.contract` before opening anything throws
+  `EngineNotFoundException` there and passes natively.
+
 ## Releasing
 
 1. A new engine: `scripts/pin-engine.sh <version>`, then the generator;
    within a contract the header, and so the diff, is empty.
 2. `version` in `pubspec.yaml`, and a `## <version>` section in
    `CHANGELOG.md`.
-3. Green CI on main, then the maintainer tags `v<version>` on main and
+3. The web engine is generated by the publish job (`tool/web`), and the dry
+   run must list `lib/src/web/engine/` with 0 warnings.
+4. Green CI on main, then the maintainer tags `v<version>` on main and
    pushes the tag. `publish.yml` checks the tag against the pubspec, the
    changelog and main, verifies the pin, runs the suite, publishes, and cuts
    the GitHub release with the changelog's section. The very first version

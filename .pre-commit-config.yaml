@@ -31,7 +31,9 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
-        exclude: ^(lib/src/interop/|test/layout\.(json|g\.dart)$|example/flame_player/(android|ios|linux|macos|windows)/)
+        # WIT is the component model's interface language, not a typo.
+        args: ['--ignore-words-list=wit']
+        exclude: ^(lib/src/interop/|test/layout\.(json|g\.dart)$|tool/web/package-lock\.json$|example/flame_player/(android|ios|linux|macos|windows|web)/)
 
   - repo: local
     hooks:

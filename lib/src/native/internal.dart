@@ -7,7 +7,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
-import 'interop/ripple.g.dart';
+import '../interop/ripple.g.dart';
 
 String readStr(RippleStr text) => text.ptr == nullptr ? '' : _decode(text);
 

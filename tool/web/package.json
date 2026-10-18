@@ -1,0 +1,11 @@
+{
+  "name": "ripplefx-engine-web-build",
+  "private": true,
+  "description": "Builds the web backend's engine files: jco's glue over the pinned component, and the WASI shim the python one imports. Run by `node tool/web/build.mjs`.",
+  "type": "module",
+  "devDependencies": {
+    "@bytecodealliance/jco": "1.37.0",
+    "@bytecodealliance/preview2-shim": "0.28.0",
+    "esbuild": "0.25.10"
+  }
+}

@@ -67,8 +67,13 @@ manifest() { jq -r "$@" "$work/manifest.json"; }
 [ "$(manifest '.capi.hash // empty')" != "" ] \
   || die "engine $version carries no C ABI (the manifest has no \`capi\`): the first that does is 1.5.1"
 
-# Every native target's C archive, both variants, and the fixtures.
+# Every native target's C archive and the web component, both variants, and
+# the fixtures. The component is the web backend's engine: it is pinned under
+# its target's name, `wasm32-component`, beside the C archives.
 pinned="$(jq --arg key "$key_id" '
+  def archives($variant):
+    (.variants[$variant] | with_entries(select(.value.c) | .value = {file: .value.c.archive, sha256: .value.c.sha256}))
+    + {"wasm32-component": {file: .variants[$variant]["wasm32-component"].archive, sha256: .variants[$variant]["wasm32-component"].sha256}};
   input as $pin
   | {
     "$comment": $pin["$comment"],
@@ -77,8 +82,8 @@ pinned="$(jq --arg key "$key_id" '
     keyId: $key,
     urls: $pin.urls,
     archives: {
-      python: (.variants.python | with_entries(select(.value.c) | .value = {file: .value.c.archive, sha256: .value.c.sha256})),
-      "no-python": (.variants["no-python"] | with_entries(select(.value.c) | .value = {file: .value.c.archive, sha256: .value.c.sha256})),
+      python: archives("python"),
+      "no-python": archives("no-python"),
       conformance: {file: .conformance.archive, sha256: .conformance.sha256}
     }
   }' "$work/manifest.json" "$pin")"

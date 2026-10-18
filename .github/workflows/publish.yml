@@ -34,17 +34,47 @@ jobs:
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "${GITHUB_REF_NAME} is not on main"; exit 1; }
       - run: bash scripts/pin-engine.sh --verify
       - run: dart pub get
-      - run: dart run tool/engine.dart fetch --conformance
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: dart run tool/engine.dart fetch --conformance --web
+      - run: |
+          (cd tool/web && npm ci --ignore-scripts)
+          node tool/web/build.mjs
       - run: dart test
         env:
           RIPPLE_VARIANT: python
-      - run: dart pub publish --dry-run
+      - run: dart run tool/variant.dart python && dart test -p chrome --compiler dart2js,dart2wasm
 
+  # Not dart-lang/setup-dart's reusable publish workflow: that publishes the
+  # tree as checked out, and the web engine is generated, never committed.
+  # setup-dart still configures pub.dev's OIDC token for a job that may ask
+  # for one, which is all automated publishing needs.
   publish:
     needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
+      contents: read
       id-token: write
-    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: dart pub get
+      - run: dart run tool/engine.dart fetch --web
+      - name: The web backend's engine files, which the package carries
+        run: |
+          (cd tool/web && npm ci --ignore-scripts)
+          node tool/web/build.mjs
+      - name: The archive holds them, and pub has nothing to say
+        run: |
+          dart pub publish --dry-run | tee dry-run.txt
+          grep -q 'engine.core.wasm' dry-run.txt
+          grep -q 'Package has 0 warnings' dry-run.txt
+      - run: dart pub publish --force
 
   release:
     needs: publish

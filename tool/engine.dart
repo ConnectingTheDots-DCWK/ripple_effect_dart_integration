@@ -5,9 +5,15 @@
 //   dart run tool/engine.dart fetch --conformance
 //   dart run tool/engine.dart fetch --target x86_64-unknown-linux-gnu
 //   dart run tool/engine.dart fetch --target host --variant no-python
+//   dart run tool/engine.dart fetch --web          # both web components
+//
+// `--conformance` also writes `fixtures/index.json` beside the fixtures —
+// every fixture and every file in it — which is how a browser test, which
+// cannot list a directory, finds them.
 //
 // Everything lands under `out/engine/<engine>/`, which is never committed:
 // the engine is under the Runtime Licence, not this repository's.
+import 'dart:convert';
 import 'dart:ffi' show Abi;
 import 'dart:io';
 
@@ -16,7 +22,7 @@ import '../hook/engine.dart';
 Future<void> main(List<String> args) async {
   if (args.isEmpty || args.first != 'fetch') {
     stderr.writeln(
-      'usage: dart run tool/engine.dart fetch [--conformance] '
+      'usage: dart run tool/engine.dart fetch [--conformance] [--web] '
       '[--target <triple>|host] [--variant python|no-python]',
     );
     exit(64);
@@ -24,10 +30,13 @@ Future<void> main(List<String> args) async {
   String? target;
   var variant = kPython;
   var conformance = false;
+  var web = false;
   for (var i = 1; i < args.length; i++) {
     switch (args[i]) {
       case '--conformance':
         conformance = true;
+      case '--web':
+        web = true;
       case '--target':
         target = args[++i];
       case '--variant':
@@ -43,7 +52,16 @@ Future<void> main(List<String> args) async {
     root: Directory.fromUri(root.resolve('out/engine/')),
   );
   try {
-    if (conformance) stdout.writeln((await cache.conformance()).path);
+    if (conformance) {
+      final unpacked = await cache.conformance();
+      writeIndex(Directory('${unpacked.path}/fixtures'));
+      stdout.writeln(unpacked.path);
+    }
+    if (web) {
+      for (final variant in [kPython, kNoPython]) {
+        stdout.writeln((await cache.component(variant)).path);
+      }
+    }
     if (target != null) {
       final triple = target == 'host' ? hostTriple() : target;
       stdout.writeln((await cache.engine(triple, variant)).path);
@@ -52,6 +70,22 @@ Future<void> main(List<String> args) async {
     stderr.writeln(e);
     exit(1);
   }
+}
+
+/// `index.json`: `{"<fixture>": ["<path inside it>", …], …}`, sorted.
+void writeIndex(Directory fixtures) {
+  final index = <String, List<String>>{};
+  for (final fixture in fixtures.listSync().whereType<Directory>()) {
+    final name = fixture.uri.pathSegments.lastWhere((s) => s.isNotEmpty);
+    index[name] = [
+      for (final file in fixture.listSync(recursive: true).whereType<File>())
+        file.path.substring(fixture.path.length + 1).replaceAll(r'\', '/'),
+    ]..sort();
+  }
+  final sorted = Map.fromEntries(
+    index.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+  );
+  File('${fixtures.path}/index.json').writeAsStringSync(jsonEncode(sorted));
 }
 
 /// The triple of the machine this runs on.
