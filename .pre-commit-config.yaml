@@ -1,0 +1,58 @@
+# Hooks for ripple_effect_dart_integration.
+#
+#   pre-commit install --hook-type pre-commit --hook-type pre-push   once, per clone
+#   pre-commit run --all-files                                       to sweep the tree
+#
+# The secret scan is TruffleHog over what is staged, and a clone needs the
+# binary: https://github.com/trufflesecurity/trufflehog/releases, checked
+# against its checksums.txt, or `brew install trufflehog`. Without it the hook
+# fails and says so rather than letting the commit through unscanned. CI's
+# `.github/workflows/secrets.yml` runs the same scan over everything pushed.
+#
+# Formatting is checked, never applied: a hook that rewrites a file under you
+# turns one failed commit into two. `dart format .` by hand.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^lib/src/interop/
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+      - id: check-added-large-files
+        args: ['--maxkb=512']
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        exclude: ^(lib/src/interop/|test/layout\.(json|g\.dart)$|example/flame_player/(android|ios|linux|macos|windows)/)
+
+  - repo: local
+    hooks:
+      - id: trufflehog
+        name: secret scan
+        entry: bash tool/trufflehog/scan.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: dart-format
+        name: dart format (check)
+        entry: dart format --set-exit-if-changed --output=none
+        language: system
+        types: [dart]
+
+      # Analysis and the whole suite in both variants before a push.
+      - id: test
+        name: analyze and test
+        entry: bash tool/pre_push.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

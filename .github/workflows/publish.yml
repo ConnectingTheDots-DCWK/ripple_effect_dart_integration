@@ -1,0 +1,64 @@
+# Publishes a release to pub.dev, with the pin checked and the suite run
+# first, and cuts the GitHub release beside it.
+#
+# pub.dev's automated publishing accepts only a run started by a **tag
+# push** — not a dispatch — so the tag is the release: `git tag v1.5.0 &&
+# git push origin v1.5.0`, by the maintainer, from main. The tag must be
+# `v` and the pubspec's version, or pub.dev refuses the token. No secret is
+# stored: the job's OIDC token is what pub.dev trusts, once the package's
+# admin page enables automated publishing for this repository with the tag
+# pattern `v{{version}}`. The first version of a package is uploaded by hand.
+
+name: Publish
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: The tag is the pubspec's version, on main
+        run: |
+          version="$(sed -n 's/^version: //p' pubspec.yaml)"
+          [ "${GITHUB_REF_NAME}" = "v${version}" ] || { echo "tag ${GITHUB_REF_NAME}, pubspec ${version}"; exit 1; }
+          grep -q "^## ${version}$" CHANGELOG.md || { echo "CHANGELOG.md has no ## ${version}"; exit 1; }
+          git fetch -q origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "${GITHUB_REF_NAME} is not on main"; exit 1; }
+      - run: bash scripts/pin-engine.sh --verify
+      - run: dart pub get
+      - run: dart run tool/engine.dart fetch --conformance
+      - run: dart test
+        env:
+          RIPPLE_VARIANT: python
+      - run: dart pub publish --dry-run
+
+  publish:
+    needs: verify
+    permissions:
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: The GitHub release, its notes the changelog's section
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="## ${version}" '$0==v{on=1;next} /^## /{on=0} on' CHANGELOG.md > notes.md
+          printf '\nhttps://pub.dev/packages/ripplefx_engine/versions/%s\n' "$version" >> notes.md
+          gh release create "$GITHUB_REF_NAME" --title "ripplefx_engine $version" --notes-file notes.md --verify-tag

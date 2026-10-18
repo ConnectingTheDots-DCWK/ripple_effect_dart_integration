@@ -1,0 +1,34 @@
+name: ripplefx_engine
+description: >-
+  Play a campaign written in the Ripple Effect editor from Dart or Flutter —
+  a Flame game, an app, a server — with the engine's own story, dice and
+  soundscape scheduling, over its C ABI.
+version: 1.5.0
+homepage: https://ripplefx.app
+repository: https://github.com/ConnectingTheDots-DCWK/ripple_effect_dart_integration
+issue_tracker: https://github.com/ConnectingTheDots-DCWK/ripple_effect_dart_integration/issues
+documentation: https://github.com/ConnectingTheDots-DCWK/ripple_effect_dart_integration/blob/main/doc/consuming.md
+topics:
+  - interactive-fiction
+  - narrative
+  - game-development
+  - ffi
+  - flame
+
+environment:
+  # Build hooks without an experiment flag: Dart 3.10, Flutter 3.38.
+  sdk: ^3.10.0
+
+# `hooks` and `code_assets` stay on 1.x: 2.x needs a `meta` newer than the
+# Flutter SDK pins, and pub then cannot resolve this package into a Flutter
+# app at all (CLAUDE.md, *Hooks 2.x cannot be resolved into a Flutter app*).
+dependencies:
+  archive: ^4.0.7
+  code_assets: ^1.0.0
+  crypto: ^3.0.6
+  ffi: ^2.1.0
+  hooks: ^1.0.3
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

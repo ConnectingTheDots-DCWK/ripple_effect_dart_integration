@@ -1,0 +1,35 @@
+name: flame_player
+description: A Ripple Effect campaign played in a Flame game.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flame: ^1.38.2
+  flame_audio: ^2.12.2
+  flutter:
+    sdk: flutter
+  ripplefx_engine:
+    path: ../..
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  # The campaign: `dart run tool/prepare.dart` copies a bundle into
+  # assets/campaign/ and writes its folders here. Never committed — the
+  # fixture bundles are the engine release's, under its Runtime Licence.
+  assets:
+    # --- tool/prepare.dart: begin
+    - assets/campaign/
+    - assets/campaign/boards/
+    - assets/campaign/passages/
+    - assets/campaign/soundscapes/
+    # --- tool/prepare.dart: end

@@ -1,0 +1,11 @@
+# The generator, a package of its own so that ffigen — whose current release
+# needs hooks 2.x — never enters the bindings' resolution, which has to stay
+# on hooks 1.x to resolve into a Flutter app.
+name: ripplefx_engine_generate
+publish_to: none
+environment:
+  sdk: ^3.10.0
+dependencies:
+  ffigen: ^23.0.0
+dev_dependencies:
+  lints: ^6.0.0
