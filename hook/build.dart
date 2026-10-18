@@ -29,7 +29,7 @@ import 'dart:io';
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 
-import 'engine.dart';
+import 'package:ripplefx_engine/src/engine_release.dart';
 
 /// The asset id the generated bindings' `@Native` functions resolve against
 /// (`lib/src/interop/ripple.g.dart`).

@@ -1,10 +1,13 @@
 // Where the engine comes from: the pin, and the verified download that fills
-// the cache. Read by the build hook beside it, and by `tool/engine.dart`,
-// which fetches the conformance fixtures and the header the same way.
+// the cache. Read by the build hook, `hook/build.dart`, and by
+// `tool/engine.dart`, which fetches the conformance fixtures and the header
+// the same way.
 //
-// **Beside the hook rather than under `lib/`**, so that nothing a program
-// imports from this package can reach the network or the disk: the bindings
-// a program calls and the code that fetched their library share no file.
+// **No library the package exports imports this file**, so nothing a program
+// imports from it can reach the network or the disk: the bindings a program
+// calls and the code that fetched their library share no file. It lived
+// beside the hook, in `hook/`, until pub.dev refused the upload — a hook
+// directory may hold `build.dart` and nothing else yet.
 //
 // Ported from the editor's `packages/ripple_native/hook/engine_artifacts.dart`,
 // itself `fl_crashpad`'s shape: the digest is checked before anything is

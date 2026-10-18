@@ -74,6 +74,8 @@ jobs:
           dart pub publish --dry-run | tee dry-run.txt
           grep -q 'engine.core.wasm' dry-run.txt
           grep -q 'Package has 0 warnings' dry-run.txt
+      - name: pub.dev's own reader accepts it
+        run: bash scripts/check-pub-dev.sh
       - run: dart pub publish --force
 
   release:

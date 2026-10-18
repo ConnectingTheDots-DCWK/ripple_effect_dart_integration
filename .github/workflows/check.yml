@@ -36,6 +36,25 @@ jobs:
       - run: dart format --set-exit-if-changed --output=none .
       - run: dart analyze --fatal-infos
 
+  # The archive as pub.dev's server reads it, which a dry run never asks.
+  pub-dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tool/web/package-lock.json
+      - run: dart pub get
+      - run: dart run tool/engine.dart fetch --web
+      - run: |
+          (cd tool/web && npm ci --ignore-scripts)
+          node tool/web/build.mjs
+      - run: bash scripts/check-pub-dev.sh
+
   pin:
     runs-on: ubuntu-latest
     timeout-minutes: 15
