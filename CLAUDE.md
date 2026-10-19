@@ -44,6 +44,14 @@ fvm at `.fvmrc`'s version, which CI's Flutter jobs read too:
 `cargo`, only with `engine_tree`. The Flame example on a Linux desktop needs
 the gstreamer development packages, for audioplayers.
 
+Node, TruffleHog, pre-commit and jq are pinned in `mise.toml` — what has no
+other home; Flutter stays `.fvmrc`'s and the web backend's packages
+`tool/web/package-lock.json`'s. `mise install` puts the pinned ones on a
+machine, and `mise run doctor` (`scripts/doctor.sh`) checks all of it —
+`.fvmrc`'s SDK, the `dart` on PATH against the pubspec's floor, Chrome for the
+hook's web leg — and says how to fix what is missing. CI installs Node with
+`jdx/mise-action`; `publish.yml` reads the pin through `scripts/mise_pin.sh`.
+
 The hooks: `pre-commit install --hook-type pre-commit --hook-type pre-push`.
 A commit pays for the secret scan (TruffleHog; a clone needs the binary),
 codespell and `dart format`; a push for the analyzer and the suite in both

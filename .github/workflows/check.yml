@@ -43,11 +43,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-node@v4
+      # Node at mise.toml's version, the one the hook's web leg runs.
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tool/web/package-lock.json
+          version: 2026.10.2
+          install_args: node
       - run: dart pub get
       - run: dart run tool/engine.dart fetch --web
       - run: |
@@ -244,11 +244,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-node@v4
+      # Node at mise.toml's version, the one the hook's web leg runs.
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tool/web/package-lock.json
+          version: 2026.10.2
+          install_args: node
       - run: dart pub get
       - run: dart run tool/engine.dart fetch --conformance --web
       - name: The web backend's engine files
@@ -275,11 +275,11 @@ jobs:
           flutter-version: ${{ steps.fvm.outputs.version }}
           channel: stable
           cache: true
-      - uses: actions/setup-node@v4
+      # Node at mise.toml's version, the one the hook's web leg runs.
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tool/web/package-lock.json
+          version: 2026.10.2
+          install_args: node
       - run: dart pub get && dart run tool/engine.dart fetch --conformance --web
       - name: The web backend's engine files
         run: |
