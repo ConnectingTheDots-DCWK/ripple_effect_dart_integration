@@ -37,8 +37,9 @@ ecosystem it is for first**: `example/flame_player` is the proof, and a
 ## Environment
 
 Dart 3.10 or later — on the maintainer's machine the Flutter SDK's, under
-fvm: `export PATH="$HOME/fvm/versions/3.41.9/bin:$PATH"`, which puts `dart`
-and `flutter` on it. `tool/generate` also needs `clang` and libclang;
+fvm at `.fvmrc`'s version, which CI's Flutter jobs read too:
+`export PATH="$HOME/fvm/versions/$(jq -r .flutter .fvmrc)/bin:$PATH"` puts
+`dart` and `flutter` on it. `tool/generate` also needs `clang` and libclang;
 `check-android.sh` an Android SDK (`ANDROID_HOME`) with its NDK and a JDK 17.
 `cargo`, only with `engine_tree`. The Flame example on a Linux desktop needs
 the gstreamer development packages, for audioplayers.
@@ -222,7 +223,7 @@ loading the other engine than `out/variant.json` asks for (`variant_test`).
   with `-headerpad_max_install_names` and its archive step tests a rename;
   the binding needs 1.5.4 on macOS as well as on iOS.
 - **The formatter moves between SDK releases.** CI's `format` job pins the
-  Dart of the maintainer's Flutter (3.11.5) so it agrees with the hook.
+  Dart of `.fvmrc`'s Flutter (3.11.5) so it agrees with the hook.
 - **The Flame example on a Linux desktop needs gstreamer's headers**
   (`libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`), for
   audioplayers; without them `flutter build linux` fails in CMake.
