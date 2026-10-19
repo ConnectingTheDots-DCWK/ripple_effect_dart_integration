@@ -34,9 +34,12 @@ jobs:
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "${GITHUB_REF_NAME} is not on main"; exit 1; }
       - run: bash scripts/pin-engine.sh --verify
       - run: dart pub get
+      - name: Read the pinned Node version
+        id: node
+        run: echo "version=$(bash scripts/mise_pin.sh node)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ steps.node.outputs.version }}
       - run: dart run tool/engine.dart fetch --conformance --web
       - run: |
           (cd tool/web && npm ci --ignore-scripts)
@@ -60,9 +63,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
+      - name: Read the pinned Node version
+        id: node
+        run: echo "version=$(bash scripts/mise_pin.sh node)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ steps.node.outputs.version }}
       - run: dart pub get
       - run: dart run tool/engine.dart fetch --web
       - name: The web backend's engine files, which the package carries

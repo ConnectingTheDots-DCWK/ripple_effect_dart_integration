@@ -27,8 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # The formatter's output moves between SDK releases, so the check runs
-      # the one the maintainer's hook does (Flutter 3.41.9's Dart). Move both
-      # together.
+      # the one the maintainer's hook does: the Dart inside .fvmrc's Flutter,
+      # which setup-dart cannot read from there. Move the two together.
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: 3.11.5
@@ -43,11 +43,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-node@v4
+      # Node at mise.toml's version, the one the hook's web leg runs.
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tool/web/package-lock.json
+          version: 2026.10.2
+          install_args: node
       - run: dart pub get
       - run: dart run tool/engine.dart fetch --web
       - run: |
@@ -117,8 +117,13 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - name: Read the pinned Flutter version
+        id: fvm
+        shell: bash
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
           channel: stable
           cache: true
       - run: flutter pub get
@@ -149,8 +154,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Read the pinned Flutter version
+        id: fvm
+        shell: bash
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
           channel: stable
           cache: true
       - name: Linux desktop's build tools, and gstreamer for audioplayers
@@ -170,8 +180,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Read the pinned Flutter version
+        id: fvm
+        shell: bash
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
           channel: stable
           cache: true
       - run: dart pub get && dart run tool/engine.dart fetch --conformance
@@ -186,8 +201,13 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Read the pinned Flutter version
+        id: fvm
+        shell: bash
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
           channel: stable
           cache: true
       - run: flutter pub get
@@ -224,11 +244,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - uses: actions/setup-node@v4
+      # Node at mise.toml's version, the one the hook's web leg runs.
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tool/web/package-lock.json
+          version: 2026.10.2
+          install_args: node
       - run: dart pub get
       - run: dart run tool/engine.dart fetch --conformance --web
       - name: The web backend's engine files
@@ -246,15 +266,20 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Read the pinned Flutter version
+        id: fvm
+        shell: bash
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
           channel: stable
           cache: true
-      - uses: actions/setup-node@v4
+      # Node at mise.toml's version, the one the hook's web leg runs.
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tool/web/package-lock.json
+          version: 2026.10.2
+          install_args: node
       - run: dart pub get && dart run tool/engine.dart fetch --conformance --web
       - name: The web backend's engine files
         run: |
