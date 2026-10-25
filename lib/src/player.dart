@@ -122,8 +122,22 @@ final class Player {
   }
 
   /// Begins the shown passage's countdown now. The player does it by itself
-  /// unless it was made with `countdowns: false`.
-  void beginCountdown() => _verb('beginCountdown', session.beginCountdown);
+  /// unless it was made with `countdowns: false`; called sooner, the
+  /// countdown runs from now, and [countdown] says so.
+  void beginCountdown() {
+    final now = _clock();
+    _verb('beginCountdown', session.beginCountdown);
+    // The batch has no Turn in it, so nothing else moves the countdown on;
+    // left as it was, update() would begin it again and time its end from
+    // when it would have begun.
+    if (_countdown case final countdown? when !countdown.begun) {
+      _countdown = Countdown._(
+        countdown.timer,
+        begun: true,
+        due: now + countdown.timer.timeoutMs,
+      );
+    }
+  }
 
   /// Runs the shown passage's countdown out now: its default is taken. The
   /// player does it by itself unless it was made with `countdowns: false`.

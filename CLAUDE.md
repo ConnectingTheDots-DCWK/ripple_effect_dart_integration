@@ -28,7 +28,7 @@ ecosystem it is for first**: `example/flame_player` is the proof, and a
 | `tool/variant.dart` | Writes, or removes, the `python: false` user-define at the end of the root pubspec — the one place the hooks runner reads one from — with `engine_tree` beside it when `RIPPLE_ENGINE_TREE` is set, and writes `out/variant.json`, which the browser suite reads instead. |
 | `tool/web/` | Node, pinned by its lockfile: `build.mjs` transpiles the pinned components with jco into `lib/src/web/engine/`, bundles preview2-shim's WASI imports with esbuild into `wasi.js`, and copies `bridge.js`, the backend's JavaScript half. Never published. |
 | `tool/generate/` | The generator, **a package of its own**: ffigen over the pinned header, then clang's record layouts into `test/layout.json` and a write probe per field into `test/layout.g.dart`. |
-| `test/` | `package:test`, on the VM and in a browser: conformance through `Session` and `Player`, the driver, lifetimes, the variant and the senses (`senses_test.dart`: the Permit turn, readings and their refusals, countdowns by hand and by `Player`, a form's labels and options) on both backends; the layout, the native arena and the web tables (`tables_test.dart`) on the VM; the web arena and the 64-bit Int on the web. `support/fixtures_{io,web}.dart` read a fixture from disk or over HTTP. |
+| `test/` | `package:test`, on the VM and in a browser: conformance through `Session` and `Player`, the driver, lifetimes, the variant and the senses (`senses_test.dart`: the Permit turn, readings and their refusals, a clock stand-in's default zone, countdowns by hand and by `Player`, a form's labels, placeholders and options) on both backends; the layout, the native arena and the web tables (`tables_test.dart`) on the VM; the web arena and the 64-bit Int on the web. `support/fixtures_{io,web}.dart` read a fixture from disk or over HTTP. |
 | `example/ripplefx_engine_example.dart` | A terminal player over any bundle folder; pub.dev's example. |
 | `example/flame_player/` | A Flutter + Flame game playing a campaign from its assets, with an example speaker over flame_audio; `tool/prepare.dart` copies a bundle in, `integration_test/` plays it to its ending on a device. |
 | `scripts/check-android.sh` | The Flame example's APK, held to the pinned engine's Android builds in a variant. |
@@ -93,7 +93,7 @@ nothing the engine handed out is left over, holds the driver to the
 scheduler on a recording speaker and a numeric clock, compares Dart's layout
 of all 75 structs with clang's, holds a disposed handle to refusing a call
 and a campaign opened from its files to one opened from its folder.
-A hundred and eleven on the VM, and twenty-two in a browser on each compiler. **A test
+A hundred and thirteen on the VM, and twenty-four in a browser on each compiler. **A test
 has to be able to fail**, and these were seen red: a passage's title written into its text (every fixture, both
 hosts); one `uint32_t` field of `RippleRunPlace` widened in the bindings (the
 layout test, naming the size of it and of `RippleRunEvent`); the variant
@@ -104,8 +104,12 @@ build, and the script, go red; on the web, a passage's title written into
 its text by the web reader (conformance, dart2wasm), and the web suite
 loading the other engine than `out/variant.json` asks for (`variant_test`).
 For 1.6: a countdown's default read from the wrong field and a notice's kind
-numbered the other way round natively (conformance and `senses_test`), and a
-field's `optional` dropped by the web reader (conformance, dart2wasm).
+numbered the other way round natively (conformance and `senses_test`), a
+field's `optional` dropped by the web reader (conformance, dart2wasm), and
+in `senses_test` natively: a field's placeholder read from its label, a
+`Player.beginCountdown()` left unrecorded, and a clock stand-in's default
+offset taken from today rather than from the date typed (under
+`TZ=Europe/Rome`; in a zone without summer time that test cannot fail).
 
 ### Against an unreleased engine
 

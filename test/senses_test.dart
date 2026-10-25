@@ -1,9 +1,11 @@
 // What contract 1.6 hands a host that the fixtures' traces do not spell in
 // full: a Permit turn's kinds by the C ABI's numbers, the readings a host
-// pushes in and the refusals it gets back, a passage's countdown driven by
-// hand and by a Player on a clock that is a number, and a form's labels and
-// options. The engine judges the rules; this judges that each crosses whole,
-// on both backends.
+// pushes in and the refusals it gets back, a clock stand-in's default zone,
+// a passage's countdown driven by hand and by a Player on a clock that is a
+// number, and a form's labels, placeholders and options. The engine judges
+// the rules; this judges that each crosses whole, on both backends.
+import 'dart:convert';
+
 import 'package:ripplefx_engine/ripplefx_engine.dart';
 import 'package:test/test.dart';
 
@@ -73,6 +75,28 @@ void main() {
     expect(notice.node, 'location_get_5');
     expect(read.indexOf(notice), lessThan(read.length - 1));
     expect((read.last as Show).passage.text, contains('41.9028'));
+  });
+
+  test('a clock stand-in is read in the zone of its own date', () async {
+    // Whichever of January and July is not at today's offset, so that in a
+    // zone with summer time the typed date is across a change from today.
+    // In a zone without, nothing can tell the two apart, and this passes.
+    final today = DateTime.now().timeZoneOffset;
+    final day = DateTime(2026, 1, 15, 12).timeZoneOffset != today
+        ? '2026-01-15'
+        : '2026-07-15';
+    final offset = DateTime.parse('$day 12:00').timeZoneOffset.inMinutes;
+    String two(int n) => '$n'.padLeft(2, '0');
+    final zone =
+        '${offset < 0 ? '-' : '+'}'
+        '${two(offset.abs() ~/ 60)}:${two(offset.abs() % 60)}';
+
+    final (_, session) = await _open('the-weathervane');
+    session.setStandIn(PermissionKind.dateTime, '$day 12:00');
+    session.permit(PermissionKind.dateTime, granted: false);
+    session.permit(PermissionKind.location, granted: false);
+    final shown = (session.start().last as Show).passage;
+    expect(shown.text, contains('${day}T12:00:00$zone'));
   });
 
   test('a player asks about what is left to answer', () async {
@@ -158,8 +182,64 @@ void main() {
     player.dispose();
   });
 
+  test('a countdown begun early by hand runs from then', () async {
+    final (_, session) = await _open('the-hesitation');
+    var now = 0;
+    final events = <String>[];
+    final player = Player(
+      session,
+      now: () => now,
+      onEffect: (effect) {
+        if (effect case Callback(:final event)) events.add(event.eventName);
+      },
+    );
+    player.start();
+    now = 500;
+    player.beginCountdown();
+    expect((player.countdown!.begun, player.countdown!.due), (true, 5500));
+
+    // When it would have begun by itself, nothing begins it again.
+    now = 2000;
+    player.update();
+    expect(events, ['countdown.started']);
+    now = 5500;
+    player.update();
+    expect(events, ['countdown.started', 'countdown.expired']);
+    player.dispose();
+  });
+
   test('a form carries its labels, and its options by id', () async {
-    final (_, session) = await _open('the-chosen');
+    // No fixture's field has a placeholder, so this one is given one: the
+    // fixture's own board with the words spliced into its second field.
+    final files = [
+      for (final file in await fixtureFiles('the-chosen'))
+        if (file.path.endsWith('.board.json'))
+          BundleFile(
+            file.path,
+            utf8.encode(
+              utf8
+                  .decode(file.bytes)
+                  .replaceFirst(
+                    '"name": "companions",',
+                    '"name": "companions", "placeholder": '
+                        '{"en-US": "Who rides with you", '
+                        '"it-IT": "Chi ti accompagna"},',
+                  ),
+            ),
+          )
+        else
+          file,
+    ];
+    final campaign = await Campaign.openFiles(files);
+    final session = Session.create(
+      campaign,
+      SessionConfig(board: campaign.manifest.entries.first),
+    );
+    addTearDown(() {
+      session.dispose();
+      campaign.dispose();
+    });
+
     var fields = (session.start().last as Ask).prompt.fields;
     expect([for (final f in fields) f.name], ['calling', 'companions']);
     expect([for (final f in fields) f.optional], [false, true]);
@@ -169,10 +249,17 @@ void main() {
     );
     expect(fields[1].options.first.value, isA<IntValue>());
     final english = [for (final o in fields[0].options) o.label];
-    expect(fields[0].label, isNotEmpty);
+    expect(
+      [for (final f in fields) (f.label, f.placeholder)],
+      [('Calling', ''), ('Companions', 'Who rides with you')],
+    );
 
     fields = (session.setLocale('it-IT').last as Ask).prompt.fields;
     expect([for (final o in fields[0].options) o.id], ['fighter', 'wizard']);
     expect([for (final o in fields[0].options) o.label], isNot(english));
+    expect(
+      [for (final f in fields) (f.label, f.placeholder)],
+      [('Vocazione', ''), ('Compagni', 'Chi ti accompagna')],
+    );
   });
 }

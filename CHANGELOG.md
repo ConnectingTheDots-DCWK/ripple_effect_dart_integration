@@ -15,14 +15,17 @@
   that already knows never shows the question. `setNow(Moment)`,
   `setPosition(Position)` and `setStandIn(kind, typed)` hand the story what
   the reader allowed, or what they would rather it believed; a `Notice`
-  effect says when a read got a stand-in, a refusal or nothing.
+  effect says when a read got a stand-in, a refusal or nothing. A clock
+  stand-in typed without an offset is read in this machine's zone on the
+  date typed, unless `localOffsetMinutes` says otherwise.
   `PermissionKind`, `Moment` and `Position` are new, and `Player` takes a
   `wallClock` it tells the session before every verb.
 - **A passage may count down.** `Passage.timer` is a `ChoiceTimer`; the
   host's clock calls `Session.beginCountdown()` and `expire()`, and the
   story takes the default as a reader would. `Player` runs countdowns from
-  `update()` and says where one stands in `countdown`; `countdowns: false`
-  offers the reader no time limit at all.
+  `update()` and says where one stands in `countdown` — begun sooner by
+  `Player.beginCountdown()`, it runs from then; `countdowns: false` offers
+  the reader no time limit at all.
 - **A form speaks the reader's language and may offer fixed answers.**
   `PromptField` gains `label`, `placeholder`, `optional` and `options`, each
   a `PromptOption` of an `id` to answer with, a `label` and a `value`.

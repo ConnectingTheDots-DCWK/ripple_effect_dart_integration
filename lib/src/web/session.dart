@@ -130,9 +130,9 @@ final class Session {
   /// told whenever the real value is missing; null takes it away. A clock is
   /// ISO 8601, and one typed without an offset is read at
   /// [localOffsetMinutes] — the reader's own for that date, this machine's
-  /// zone now unless given. A position is `"lat, lon"`, or a place's name.
-  /// One that does not read is a [HostException] of [Code.standIn], its
-  /// message saying why.
+  /// zone on that date unless given. A position is `"lat, lon"`, or a
+  /// place's name. One that does not read is a [HostException] of
+  /// [Code.standIn], its message saying why.
   void setStandIn(
     PermissionKind kind,
     String? typed, {
@@ -140,7 +140,7 @@ final class Session {
   }) => _instance.call(handle, 'setStandIn', [
     to.permissionKind(kind),
     typed?.toJS,
-    (localOffsetMinutes ?? DateTime.now().timeZoneOffset.inMinutes).toJS,
+    (localOffsetMinutes ?? standInOffset(kind, typed)).toJS,
   ]);
 
   List<Effect> setLocale(String locale) => _batch('setLocale', [locale.toJS]);

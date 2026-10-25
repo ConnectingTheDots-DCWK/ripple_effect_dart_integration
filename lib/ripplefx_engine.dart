@@ -34,7 +34,7 @@ export 'src/mixer_types.dart' show Phase, VoiceCommand, VoiceKind;
 export 'src/player.dart';
 export 'src/records.dart';
 export 'src/session.dart' show Session;
-export 'src/session_types.dart';
+export 'src/session_types.dart' hide standInOffset;
 export 'src/soundscape_driver.dart';
 export 'src/speaker.dart' hide VoiceInbox, VoiceReport;
 export 'src/value.dart'
