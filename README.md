@@ -40,14 +40,19 @@ for (var batch = session.start(); !batch.last.isOver;) {
     Show(:final passage) => session.choose(pick(passage)),  // Markdown, and its pictures
     Hold(:final ms) => await wait(ms, session.elapsed),     // your clock, never the engine's
     Ask(:final prompt) => session.answer(fill(prompt)),
+    Permit(:final kinds) => [                               // it reads the clock or the place
+      for (final kind in kinds) ...session.permit(kind, granted: allow(kind)),
+    ],
     _ => throw StateError('every batch ends on a Turn'),
   };
 }
 ```
 
-`Player` is the same loop written once: it answers holds from your game
-loop's `update`, applies the sound, and dispatches the author's named
-callbacks.
+`Player` is the same loop written once: it answers holds and runs a
+passage's countdown from your game loop's `update`, applies the sound, and
+dispatches the author's named callbacks. A story that reads the clock or
+the reader's position asks first, with a `Permit` turn, and is handed what
+the reader allowed; the engine itself reads neither.
 [`example/flame_player`](https://github.com/ConnectingTheDots-DCWK/ripple_effect_dart_integration/tree/main/example/flame_player)
 is a Flame game that plays a campaign from its assets;
 `example/ripplefx_engine_example.dart` is a terminal player.
@@ -71,7 +76,7 @@ offline builds, opening a campaign from assets, and the web are in
 one engine release, `engine-v<version>` of the public
 [ripple_engine_releases](https://github.com/ConnectingTheDots-DCWK/ripple_engine_releases),
 whose signed manifest names every archive. A version here is the engine's
-contract, `MAJOR.MINOR`, and a `PATCH` of its own: 1.5.0 binds contract 1.5.
+contract, `MAJOR.MINOR`, and a `PATCH` of its own: 1.6.0 binds contract 1.6.
 
 ## Working on it
 

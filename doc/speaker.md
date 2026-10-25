@@ -6,7 +6,7 @@ ships no speaker.** The audio libraries a Dart program might use have
 nothing in common, each is a dependency with native parts of its own, and
 which one a game uses is the game's call. What ships is the seam: the
 engine's scheduler decides every voice, and a speaker of yours plays them.
-It binds **Ripple Effect contract 1.5**, and transcribes the engine's
+It binds **Ripple Effect contract 1.6**, and transcribes the engine's
 `host-audio-system.md` §9, the source of truth; it is the C, C++ and C#
 bindings' contract, word for word where the languages allow.
 

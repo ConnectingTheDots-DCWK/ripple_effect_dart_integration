@@ -3,6 +3,39 @@
 `MAJOR.MINOR` is the Ripple Effect engine contract these bindings bind, and
 `PATCH` is their own. Each version pins one engine release, named here.
 
+## 1.6.0
+
+- **Contract 1.6, Grammar Lich**, pinning engine 1.6.0: the interop
+  regenerated from its header, and both backends — `dart:ffi` and the web
+  component — binding the same additions.
+- **A story that reads the clock or the place asks first.**
+  `Manifest.permissions` names what it reads, and a session with a kind
+  nobody has answered for begins on a `Permit` turn, answered kind by kind
+  with `Session.permit(kind, granted:)` — before `start()` too, so a host
+  that already knows never shows the question. `setNow(Moment)`,
+  `setPosition(Position)` and `setStandIn(kind, typed)` hand the story what
+  the reader allowed, or what they would rather it believed; a `Notice`
+  effect says when a read got a stand-in, a refusal or nothing.
+  `PermissionKind`, `Moment` and `Position` are new, and `Player` takes a
+  `wallClock` it tells the session before every verb.
+- **A passage may count down.** `Passage.timer` is a `ChoiceTimer`; the
+  host's clock calls `Session.beginCountdown()` and `expire()`, and the
+  story takes the default as a reader would. `Player` runs countdowns from
+  `update()` and says where one stands in `countdown`; `countdowns: false`
+  offers the reader no time limit at all.
+- **A form speaks the reader's language and may offer fixed answers.**
+  `PromptField` gains `label`, `placeholder`, `optional` and `options`, each
+  a `PromptOption` of an `id` to answer with, a `label` and a `value`.
+- `HostException` for the four new refusals — `Code.notPermitted`,
+  `Code.standIn`, `Code.noCountdown`, `Code.countdownNotBegun` — with the
+  kind's name in `Failure.subject` for the first two; the `countdown.started`
+  and `countdown.expired` callback events, and the `nothing-on-wire` run
+  issue.
+- **Every conformance fixture of the release plays**, 33 of them, through
+  `Session` and `Player` on both backends, the new ones driven by their
+  permits, stand-ins, instants and countdowns; both examples answer a Permit
+  turn, and the Flame one draws a visible countdown.
+
 ## 1.5.0
 
 - **The Dart bindings**, pinning engine 1.5.4: `ripplefx_engine` on pub.dev,

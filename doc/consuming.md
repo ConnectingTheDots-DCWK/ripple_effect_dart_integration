@@ -89,6 +89,50 @@ session or mixer that is never disposed is freed when it is collected. A
 session goes on working after its campaign is disposed. A handle belongs to
 the isolate that made it; one isolate at a time may use it.
 
+## The clock, the place, and a passage that counts down
+
+The engine reads no clock and touches no sensor: everything below is a value
+your program hands in (`campaign-host-api.md` §4b and §7a, in the engine's
+repository).
+
+**A story that reads the time or the reader's position asks first.**
+`campaign.manifest.permissions` names what it reads — `dateTime`,
+`location` — and a session with a kind nobody has answered for begins on a
+`Permit` turn, before its first page. Ask the reader, and answer each kind
+with `session.permit(kind, granted: …)`; the answer to the last begins the
+story. A program that already knows — a setting the reader chose once —
+answers before `start()` and the reader never sees the question. Answers
+are not part of a save: a resumed session asks again, and a host answers
+again from what it remembers.
+
+- **The time** is `session.setNow(Moment.now())` before every verb that can
+  step, or `Player(…, wallClock: Moment.now)`, which does it for you. Within
+  one verb time does not move.
+- **A position** is pushed, never pulled: `session.setPosition(Position(…))`
+  with your platform's last fix — geolocator, a game's own map — and refused
+  with a `HostException` once the reader has said no. One handed in before
+  the answer is kept, and read only if the answer is yes.
+- **A stand-in** is what the reader would rather the story believed, typed:
+  `session.setStandIn(PermissionKind.dateTime, '2026-10-19T18:30:00+02:00')`
+  or `setStandIn(PermissionKind.location, 'Rome, Italy')`. A story is told it
+  whenever the real value is missing, and cannot tell the difference.
+- **A `Notice`** effect says, once per kind and outcome in a playthrough,
+  that a read got a stand-in, a refusal or nothing: a line for a log or a
+  developer's console.
+
+**A passage may count down.** `passage.timer` is a `ChoiceTimer`: after
+`afterMs` on your clock call `session.beginCountdown()`, after `timeoutMs`
+more `session.expire()`, and the story takes the passage's default choice as
+a reader would. A `Player` does both from `update()`, and `player.countdown`
+says where it stands for a game to draw. `Player(…, countdowns: false)` runs
+none: WCAG 2.2.1 asks that a reader can turn a time limit off, and the host
+is where that is answered.
+
+**A form's field** has a `label` and a `placeholder` to show, and is
+`optional` or required — a required one is not submitted empty. A field with
+`options` is a pick, not a box: draw the options' labels, and answer with
+the picked options' `id`s, never their labels.
+
 ## Per platform
 
 - **Windows** (x64, arm64): `ripple_effect_engine.dll`, built against the

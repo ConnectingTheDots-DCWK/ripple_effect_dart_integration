@@ -24,11 +24,11 @@ ecosystem it is for first**: `example/flame_player` is the proof, and a
 | `lib/src/interop/ripple.g.dart` | **Generated**: the header as `@Native` functions resolved by asset id, by ffigen, C names kept. Never edited; `tool/generate` rewrites it. |
 | `hook/build.dart`, `lib/src/engine_release.dart` | The build hook: the pinned C archive for the platform being built, downloaded into the hook's shared output and checked against `engine.json`, or an `engine_dir`/`engine_tree` user-define's library; handed to the SDK as a `CodeAsset`. `engine_release.dart` is the pin and the verified cache, shared with `tool/engine.dart`; no exported library imports it. |
 | `engine.json`, `engine-signing.pub`, `scripts/pin-engine.sh` | The pin and its trust anchor, the same files as the C/C++ and C# bindings'. |
-| `tool/engine.dart` | Fetches the conformance fixtures and any target's archive into `out/engine/<engine>/`, through the hook's cache code. |
-| `tool/variant.dart` | Writes, or removes, the `python: false` user-define at the end of the root pubspec — the one place the hooks runner reads one from — and writes `out/variant.json`, which the browser suite reads instead. |
+| `tool/engine.dart` | Fetches the conformance fixtures and any target's archive into `out/engine/<engine>/`, through the hook's cache code — or, with `RIPPLE_ENGINE_TREE` set, copies that checkout's fixtures and built components into `out/engine/tree/`. |
+| `tool/variant.dart` | Writes, or removes, the `python: false` user-define at the end of the root pubspec — the one place the hooks runner reads one from — with `engine_tree` beside it when `RIPPLE_ENGINE_TREE` is set, and writes `out/variant.json`, which the browser suite reads instead. |
 | `tool/web/` | Node, pinned by its lockfile: `build.mjs` transpiles the pinned components with jco into `lib/src/web/engine/`, bundles preview2-shim's WASI imports with esbuild into `wasi.js`, and copies `bridge.js`, the backend's JavaScript half. Never published. |
 | `tool/generate/` | The generator, **a package of its own**: ffigen over the pinned header, then clang's record layouts into `test/layout.json` and a write probe per field into `test/layout.g.dart`. |
-| `test/` | `package:test`, on the VM and in a browser: conformance through `Session` and `Player`, the driver, lifetimes and the variant on both backends; the layout, the native arena and the web tables (`tables_test.dart`) on the VM; the web arena and the 64-bit Int on the web. `support/fixtures_{io,web}.dart` read a fixture from disk or over HTTP. |
+| `test/` | `package:test`, on the VM and in a browser: conformance through `Session` and `Player`, the driver, lifetimes, the variant and the senses (`senses_test.dart`: the Permit turn, readings and their refusals, countdowns by hand and by `Player`, a form's labels and options) on both backends; the layout, the native arena and the web tables (`tables_test.dart`) on the VM; the web arena and the 64-bit Int on the web. `support/fixtures_{io,web}.dart` read a fixture from disk or over HTTP. |
 | `example/ripplefx_engine_example.dart` | A terminal player over any bundle folder; pub.dev's example. |
 | `example/flame_player/` | A Flutter + Flame game playing a campaign from its assets, with an example speaker over flame_audio; `tool/prepare.dart` copies a bundle in, `integration_test/` plays it to its ending on a device. |
 | `scripts/check-android.sh` | The Flame example's APK, held to the pinned engine's Android builds in a variant. |
@@ -86,14 +86,14 @@ build. The simulator is held by the integration test rather than that script,
 for the reason in the traps below.
 
 The suite plays every conformance fixture of the pinned release through
-`Session` and through `Player`, in the variant configured: 24 with Python, 21
-without, skipping 3 — counts asserted, and the engine asked, not the
+`Session` and through `Player`, in the variant configured: 33 with Python, 27
+without, skipping 6 — counts asserted, and the engine asked, not the
 configuration (`variant_test.dart`, against `RIPPLE_VARIANT`). It checks
 nothing the engine handed out is left over, holds the driver to the
 scheduler on a recording speaker and a numeric clock, compares Dart's layout
-of all 68 structs with clang's, holds a disposed handle to refusing a call
+of all 75 structs with clang's, holds a disposed handle to refusing a call
 and a campaign opened from its files to one opened from its folder.
-Ninety-six on the VM, and seventeen in a browser on each compiler. **A test
+A hundred and eleven on the VM, and twenty-two in a browser on each compiler. **A test
 has to be able to fail**, and these were seen red: a passage's title written into its text (every fixture, both
 hosts); one `uint32_t` field of `RippleRunPlace` widened in the bindings (the
 layout test, naming the size of it and of `RippleRunEvent`); the variant
@@ -103,6 +103,37 @@ out — an `engine_dir` at an empty folder — so the build hook throws and the
 build, and the script, go red; on the web, a passage's title written into
 its text by the web reader (conformance, dart2wasm), and the web suite
 loading the other engine than `out/variant.json` asks for (`variant_test`).
+For 1.6: a countdown's default read from the wrong field and a notice's kind
+numbered the other way round natively (conformance and `senses_test`), and a
+field's `optional` dropped by the web reader (conformance, dart2wasm).
+
+### Against an unreleased engine
+
+Between a contract's freeze and its engine release there is nothing to pin,
+and the suite plays a ripple_effect checkout instead — the variable the other
+bindings read, spelled where each step needs it:
+
+```sh
+export RIPPLE_ENGINE_TREE=../ripple_effect      # a checkout; its tool/build_wasm.sh run for the web
+dart run tool/engine.dart fetch --conformance --web    # the tree's fixtures and components, into out/engine/tree/
+node tool/web/build.mjs                                # from out/engine/tree/
+dart run tool/variant.dart python && RIPPLE_VARIANT=python dart test
+dart run tool/variant.dart no-python && RIPPLE_VARIANT=no-python dart test
+dart test -p chrome,firefox --compiler dart2js,dart2wasm   # after each variant
+(cd tool/generate && dart run bin/generate.dart)       # the tree's header
+unset RIPPLE_ENGINE_TREE && dart run tool/variant.dart python   # the block out again
+```
+
+`tool/variant.dart` writes `engine_tree` into the root pubspec's block, so
+the hook builds the C ABI there with cargo — into the tree's own `target/`,
+shared with whoever else builds there — and the native suite reads the
+tree's fixtures straight from it; the browser suite plays `out/engine/tree/`
+whenever the engine it loaded is not the pin's. The block is never
+committed, and neither is anything under `out/`. The Flame example takes
+`engine_tree` in its own pubspec the same way, and plays on a Linux desktop;
+a phone needs a published engine (`engine_tree` builds desktop engines only).
+The pin's checks — `pin-engine.sh --verify`, the generator's diff against the
+pinned header, `check-android.sh`, `check-ios.sh` — wait for the release.
 
 ## The decisions
 
@@ -173,6 +204,19 @@ loading the other engine than `out/variant.json` asks for (`variant_test`).
 - **The driver and the player own no clock and no timer**: a `Clock` of
   milliseconds, `Clocks.steady()` unless a test passes a number. A game loop
   is the timer — Flame's `update(dt)` calls `update()` on both.
+- **The player runs a passage's countdown by default**, from `update()` on
+  that clock, timing its end from when it was due rather than from the frame
+  that noticed; `countdowns: false` runs none, for a reader who wants no
+  time limit and for the conformance driver, whose moves say when. A
+  re-rendered passage — `setLocale` — is the same visit and keeps its
+  countdown. Its wall clock is a separate `wallClock`, handed to `setNow`
+  before every verb that can step: the story's time and the loop's are not
+  one clock.
+- **The 1.6 senses are flat, as the effects are**: `Permit` is a Turn and
+  `Notice` an effect with its fields on it, `PermissionKind` an enum in the C
+  ABI's order carrying its wire name, and `Moment` and `Position` plain
+  records. `permit` takes `granted:` by name, because `permit(kind, true)`
+  says nothing at the call site.
 - **A target with no engine build bundles nothing, and builds.** 32-bit
   Android is in every default `flutter build apk`; failing the hook there
   would fail every Android app. The hook returns without an asset, and
@@ -218,6 +262,15 @@ loading the other engine than `out/variant.json` asks for (`variant_test`).
   engine in it.
 - **`dart pub publish` wants `doc/`, singular**, and the publish job fails on
   any warning; `--dry-run` must say *0 warnings*.
+- **The header declares no `RipplePermissionKind`.** The C ABI takes and
+  hands a kind as a bare `uint32_t` (`ripple_session_permit`,
+  `RipplePermit.kinds`, `RippleNotice.kind`), and cbindgen emits no enum
+  nobody's signature names, so ffigen generates none either. The numbers —
+  `dateTime` 0, `location` 1 — are `PermissionKind`'s order, held by
+  `tables_test.dart` to the web's names and by `senses_test.dart` to a
+  manifest's `permissions` read back through a Permit turn.
+- **`when` cannot name a pattern variable.** `final when => …` in a switch
+  is a compile error; a `Position.when` read in a pattern takes another name.
 - **`while (x case …)` is not Dart.** Pattern matching in a condition is
   `if`-case only; a loop over a nullable Turn is a `for` with the read in its
   update.
@@ -294,7 +347,10 @@ loading the other engine than `out/variant.json` asks for (`variant_test`).
 ## Releasing
 
 1. A new engine: `scripts/pin-engine.sh <version>`, then the generator;
-   within a contract the header, and so the diff, is empty.
+   within a contract the header, and so the diff, is empty. A new contract
+   is bound against the frozen tree first (*Against an unreleased engine*),
+   and the pin follows the engine's release: the generator's output from
+   the pinned header must then be the tree's, byte for byte.
 2. `version` in `pubspec.yaml`, and a `## <version>` section in
    `CHANGELOG.md`.
 3. The web engine is generated by the publish job (`tool/web`), and the dry

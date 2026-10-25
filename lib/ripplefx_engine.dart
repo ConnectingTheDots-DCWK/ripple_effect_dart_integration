@@ -12,6 +12,9 @@
 ///     Show(:final passage) => session.choose(pick(passage)),
 ///     Ask(:final prompt) => session.answer(fill(prompt)),
 ///     Hold(:final ms) => await wait(ms, session.elapsed), // your clock
+///     Permit(:final kinds) => [ // it reads the clock or the place
+///       for (final kind in kinds) ...session.permit(kind, granted: allow(kind)),
+///     ],
 ///     _ => throw StateError('every batch ends on a Turn'),
 ///   };
 /// }
