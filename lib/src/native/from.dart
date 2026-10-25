@@ -10,6 +10,15 @@ import '../records.dart';
 import '../value.dart';
 import 'arena.dart';
 
+/// A `RipplePermissionKind`, by the header's number.
+PermissionKind permissionKind(int kind) =>
+    switch (RipplePermissionKind.fromValue(kind)) {
+      RipplePermissionKind.RIPPLE_PERMISSION_KIND_DATE_TIME =>
+        PermissionKind.dateTime,
+      RipplePermissionKind.RIPPLE_PERMISSION_KIND_LOCATION =>
+        PermissionKind.location,
+    };
+
 Track track(RippleTrack t) => Track(
   media: t.media,
   lane: t.lane,
@@ -289,12 +298,12 @@ Effect effect(RippleEffect e) {
       readList(
         data.permit.ref.kinds,
         data.permit.ref.kind_count,
-        (i) => PermissionKind.values[data.permit.ref.kinds[i]],
+        (i) => permissionKind(data.permit.ref.kinds[i]),
       ),
     ),
     RippleEffectKind.RIPPLE_EFFECT_KIND_NOTICE => Notice(
       code: readStr(data.notice.ref.code),
-      kind: PermissionKind.values[data.notice.ref.kind],
+      kind: permissionKind(data.notice.ref.kind),
       node: readStrOr(data.notice.ref.node),
       message: readStr(data.notice.ref.message),
     ),

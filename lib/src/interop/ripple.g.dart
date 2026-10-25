@@ -3362,6 +3362,21 @@ enum RipplePayloadKind {
   };
 }
 
+/// What a story may read of the world outside it. The microphone is not one.
+enum RipplePermissionKind {
+  RIPPLE_PERMISSION_KIND_DATE_TIME(0),
+  RIPPLE_PERMISSION_KIND_LOCATION(1);
+
+  final int value;
+  const RipplePermissionKind(this.value);
+
+  static RipplePermissionKind fromValue(int value) => switch (value) {
+    0 => RIPPLE_PERMISSION_KIND_DATE_TIME,
+    1 => RIPPLE_PERMISSION_KIND_LOCATION,
+    _ => throw ArgumentError('Unknown value for RipplePermissionKind: $value'),
+  };
+}
+
 /// `permit`'s payload: each a [`RipplePermissionKind`].
 final class RipplePermit extends ffi.Struct {
   external ffi.Pointer<ffi.Uint32> kinds;

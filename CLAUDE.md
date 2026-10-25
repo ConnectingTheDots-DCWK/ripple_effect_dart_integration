@@ -93,7 +93,7 @@ nothing the engine handed out is left over, holds the driver to the
 scheduler on a recording speaker and a numeric clock, compares Dart's layout
 of all 75 structs with clang's, holds a disposed handle to refusing a call
 and a campaign opened from its files to one opened from its folder.
-A hundred and thirteen on the VM, and twenty-four in a browser on each compiler. **A test
+A hundred and fourteen on the VM, and twenty-four in a browser on each compiler. **A test
 has to be able to fail**, and these were seen red: a passage's title written into its text (every fixture, both
 hosts); one `uint32_t` field of `RippleRunPlace` widened in the bindings (the
 layout test, naming the size of it and of `RippleRunEvent`); the variant
@@ -104,7 +104,8 @@ build, and the script, go red; on the web, a passage's title written into
 its text by the web reader (conformance, dart2wasm), and the web suite
 loading the other engine than `out/variant.json` asks for (`variant_test`).
 For 1.6: a countdown's default read from the wrong field and a notice's kind
-numbered the other way round natively (conformance and `senses_test`), a
+numbered the other way round natively — again once mapped through the
+generated `RipplePermissionKind` (conformance and `senses_test`), a
 field's `optional` dropped by the web reader (conformance, dart2wasm), and
 in `senses_test` natively: a field's placeholder read from its label, a
 `Player.beginCountdown()` left unrecorded, and a clock stand-in's default
@@ -266,13 +267,12 @@ pinned header, `check-android.sh`, `check-ios.sh` — wait for the release.
   engine in it.
 - **`dart pub publish` wants `doc/`, singular**, and the publish job fails on
   any warning; `--dry-run` must say *0 warnings*.
-- **The header declares no `RipplePermissionKind`.** The C ABI takes and
-  hands a kind as a bare `uint32_t` (`ripple_session_permit`,
-  `RipplePermit.kinds`, `RippleNotice.kind`), and cbindgen emits no enum
-  nobody's signature names, so ffigen generates none either. The numbers —
-  `dateTime` 0, `location` 1 — are `PermissionKind`'s order, held by
-  `tables_test.dart` to the web's names and by `senses_test.dart` to a
-  manifest's `permissions` read back through a Permit turn.
+- **A permission kind crosses as a bare `uint32_t`.** The header declares
+  `RipplePermissionKind`, but `ripple_session_permit`, `RipplePermit.kinds`
+  and `RippleNotice.kind` are typed `uint32_t`, so ffigen leaves them `int`.
+  The native backend maps each way through the generated enum by an
+  exhaustive switch, never by `PermissionKind.index`; the web indexes its
+  WIT table by `PermissionKind`, and `tables_test.dart` holds both orders.
 - **`when` cannot name a pattern variable.** `final when => …` in a switch
   is a compile error; a `Position.when` read in a pattern takes another name.
 - **`while (x case …)` is not Dart.** Pattern matching in a condition is

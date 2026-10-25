@@ -72,9 +72,15 @@ void main() {
     'RIPPLE_RUN_EVENT_KIND_',
   );
 
-  test('the web spells PermissionKind as the binding numbers it', () {
-    // The header declares no enum for it; ripple_session_permit takes these
-    // numbers, and test/senses_test.dart reads a Permit turn's back.
+  holds(
+    'RipplePermissionKind',
+    permissionKinds,
+    RipplePermissionKind.values,
+    'RIPPLE_PERMISSION_KIND_',
+  );
+
+  test('the web reads PermissionKind in the table\'s order', () {
+    // web/from.dart and web/to.dart index the table by PermissionKind.
     expect(
       [for (final kind in PermissionKind.values) kind.wire],
       [

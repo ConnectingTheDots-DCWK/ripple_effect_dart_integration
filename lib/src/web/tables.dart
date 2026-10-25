@@ -73,9 +73,7 @@ const List<String> callbackKinds = [
   'countdown-expired',
 ];
 
-/// `PermissionKind`'s order, the C ABI's numbers. The header declares no
-/// enum for it, so test/tables_test.dart holds it to `ripple_session_permit`
-/// instead.
+/// `RipplePermissionKind`.
 const List<String> permissionKinds = ['date-time', 'location'];
 
 /// `RippleRunEventKind`.

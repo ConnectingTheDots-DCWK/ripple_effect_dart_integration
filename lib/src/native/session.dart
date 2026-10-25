@@ -15,6 +15,14 @@ import '../session_types.dart';
 import 'arena.dart';
 import 'check.dart';
 
+/// [kind] as the header's `RipplePermissionKind`.
+int _cKind(PermissionKind kind) => switch (kind) {
+  PermissionKind.dateTime =>
+    RipplePermissionKind.RIPPLE_PERMISSION_KIND_DATE_TIME.value,
+  PermissionKind.location =>
+    RipplePermissionKind.RIPPLE_PERMISSION_KIND_LOCATION.value,
+};
+
 typedef _Call<T extends NativeType> =
     RippleResult Function(
       Pointer<Pointer<T>> out,
@@ -148,7 +156,7 @@ final class Session implements Finalizable {
   /// begins the story. Answers are not saved: a resumed session asks again.
   List<Effect> permit(PermissionKind kind, {required bool granted}) => _batch(
     (out, error) =>
-        ripple_session_permit(handle, kind.index, granted, out, error),
+        ripple_session_permit(handle, _cKind(kind), granted, out, error),
   );
 
   /// What time it is, from the host — null for no clock. Before every verb
@@ -196,7 +204,7 @@ final class Session implements Finalizable {
     (arena) => plain(
       (error) => ripple_session_set_stand_in(
         handle,
-        kind.index,
+        _cKind(kind),
         str(arena, typed),
         localOffsetMinutes ?? standInOffset(kind, typed),
         error,

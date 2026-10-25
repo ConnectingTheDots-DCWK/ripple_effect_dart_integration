@@ -383,7 +383,7 @@ enum RunEventKind {
 enum PayloadKind { present, withheld, absent }
 
 /// What a story may read of the world outside it (ADR
-/// *a-campaign-asks-before-it-reads*), in the C header's order. The
+/// *a-campaign-asks-before-it-reads*), in `RipplePermissionKind`'s order. The
 /// microphone is not one.
 enum PermissionKind {
   dateTime('dateTime'),
