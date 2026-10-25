@@ -44,6 +44,7 @@ class StoryOverlay extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: switch (turn) {
+              Permit(:final kinds) => _Permit(game, kinds.first),
               Show(:final passage) => _Passage(game, passage),
               Ended(:final title) => _Ending(game, title ?? 'The end'),
               Failed(:final message) => _Ending(game, message),
@@ -74,6 +75,14 @@ class _Passage extends StatelessWidget {
       // Markdown, as the author wrote it; a game renders it as it likes.
       Text(passage.text),
       const SizedBox(height: 16),
+      // A countdown the author meant to be seen: the game loop runs it, and
+      // the passage's default is taken when it runs out.
+      ValueListenableBuilder<double?>(
+        valueListenable: game.countdown,
+        builder: (context, left, _) => left == null
+            ? const SizedBox.shrink()
+            : LinearProgressIndicator(value: left),
+      ),
       for (final (i, choice) in passage.choices.indexed)
         Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -85,6 +94,37 @@ class _Passage extends StatelessWidget {
         ),
       if (passage.choices.isEmpty)
         TextButton(onPressed: game.leave, child: const Text('Leave')),
+    ],
+  );
+}
+
+/// The question a story that reads the world outside it asks before it
+/// begins, one kind at a time: the answer to the last begins the story.
+class _Permit extends StatelessWidget {
+  const _Permit(this.game, this.kind);
+
+  final StoryGame game;
+  final PermissionKind kind;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text(switch (kind) {
+        PermissionKind.dateTime => 'This story reads the date and time.',
+        PermissionKind.location => 'This story reads where you are.',
+      }, style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 16),
+      FilledButton(
+        onPressed: () => game.permit(kind, granted: true),
+        child: const Text('Allow'),
+      ),
+      const SizedBox(height: 8),
+      OutlinedButton(
+        onPressed: () => game.permit(kind, granted: false),
+        child: const Text('Not now'),
+      ),
     ],
   );
 }
