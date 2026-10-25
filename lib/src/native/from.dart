@@ -70,6 +70,7 @@ Manifest manifest(RippleManifest m) => Manifest(
     );
   }),
   needs: readTexts(m.needs, m.need_count),
+  permissions: readTexts(m.permissions, m.permission_count),
 );
 
 Port _port(RipplePort p) => Port(
@@ -125,6 +126,14 @@ Passage passage(RipplePassage p) => Passage(
   untranslated: readStrOr(p.untranslated),
   soundscape: p.soundscape == nullptr ? null : soundscape(p.soundscape.ref),
   silence: p.silence,
+  timer: p.timer == nullptr
+      ? null
+      : ChoiceTimer(
+          afterMs: p.timer.ref.after_ms,
+          timeoutMs: p.timer.ref.timeout_ms,
+          visible: p.timer.ref.visible,
+          defaultChoice: p.timer.ref.default_choice,
+        ),
 );
 
 Prompt prompt(RipplePrompt p) => Prompt(
@@ -136,6 +145,17 @@ Prompt prompt(RipplePrompt p) => Prompt(
       readStr(f.name),
       readStr(f.type_name),
       readValue(f.default_value),
+      label: readStr(f.label),
+      placeholder: readStr(f.placeholder),
+      optional: f.optional,
+      options: readList(f.options, f.option_count, (j) {
+        final o = f.options[j];
+        return PromptOption(
+          readStr(o.id),
+          readStr(o.label),
+          readValue(o.value),
+        );
+      }),
     );
   }),
 );
@@ -265,7 +285,20 @@ Effect effect(RippleEffect e) {
       readStr(data.failed.ref.message),
       readStrOr(data.failed.ref.node),
     ),
-    _ => const Stopped(),
+    RippleEffectKind.RIPPLE_EFFECT_KIND_PERMIT => Permit(
+      readList(
+        data.permit.ref.kinds,
+        data.permit.ref.kind_count,
+        (i) => PermissionKind.values[data.permit.ref.kinds[i]],
+      ),
+    ),
+    RippleEffectKind.RIPPLE_EFFECT_KIND_NOTICE => Notice(
+      code: readStr(data.notice.ref.code),
+      kind: PermissionKind.values[data.notice.ref.kind],
+      node: readStrOr(data.notice.ref.node),
+      message: readStr(data.notice.ref.message),
+    ),
+    RippleEffectKind.RIPPLE_EFFECT_KIND_STOPPED => const Stopped(),
   };
 }
 

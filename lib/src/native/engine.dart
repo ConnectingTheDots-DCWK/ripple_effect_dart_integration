@@ -5,7 +5,7 @@ import '../interop/ripple.g.dart';
 /// The engine library this program loaded, and what it binds.
 abstract final class RippleEngine {
   /// The contract these bindings bind: `MAJOR.MINOR`.
-  static const String boundContract = '1.5';
+  static const String boundContract = '1.6';
 
   static bool _checked = false;
 
@@ -16,14 +16,14 @@ abstract final class RippleEngine {
   /// host need only call it to choose [base].
   static Future<void> load({Uri? base}) async => ensureLoaded();
 
-  /// The engine library's version, `1.5.3` — the one loaded, not the one
+  /// The engine library's version, `1.6.0` — the one loaded, not the one
   /// built against.
   static String get version {
     ensureLoaded();
     return readCStr(ripple_engine_version());
   }
 
-  /// The contract the loaded library binds, `1.5`.
+  /// The contract the loaded library binds, `1.6`.
   static String get contract {
     ensureLoaded();
     return readCStr(ripple_engine_contract());

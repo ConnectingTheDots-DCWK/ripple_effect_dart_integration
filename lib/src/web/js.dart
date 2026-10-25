@@ -57,6 +57,13 @@ final class Instance {
   }
 }
 
+/// A WIT `permission-kind` by the wire name a native failure's `subject`
+/// carries, and by the words its message uses.
+String _wire(JSAny? kind) => str(kind) == 'date-time' ? 'dateTime' : str(kind);
+
+String _noun(JSAny? kind) =>
+    str(kind) == 'date-time' ? 'the date and time' : 'the location';
+
 JSArray _array(List<JSAny?> items) => [for (final item in items) item].toJS;
 
 // The readers every module shares.
@@ -154,6 +161,24 @@ Failure failureOf(JSObject payload) {
       Code.unknownLocale,
       'the campaign has no language ${str(val)}',
       subject: str(val),
+    ),
+    'not-permitted' => Failure(
+      Code.notPermitted,
+      '${_noun(val)} has not been allowed, so it cannot be handed in',
+      subject: _wire(val),
+    ),
+    'stand-in' => Failure(
+      Code.standIn,
+      'the stand-in for ${_noun(obj()['kind'])} is ${str(obj()['reason'])}',
+      subject: _wire(obj()['kind']),
+    ),
+    'no-countdown' => const Failure(
+      Code.noCountdown,
+      'this passage has no countdown',
+    ),
+    'countdown-not-begun' => const Failure(
+      Code.countdownNotBegun,
+      "this passage's countdown has not begun",
     ),
     'bundle' => failureOf(val! as JSObject),
     'board-gone' => Failure(

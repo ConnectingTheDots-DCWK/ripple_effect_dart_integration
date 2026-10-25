@@ -7,6 +7,7 @@ import '../records.dart';
 import '../session_types.dart';
 import '../value.dart';
 import 'js.dart';
+import 'tables.dart';
 
 /// [root] as a WIT `value`: an arena, the root first, each child after its
 /// parent.
@@ -113,3 +114,18 @@ JSObject soundscape(Soundscape s) => record({
 });
 
 JSUint32Array u32s(List<int> items) => Uint32List.fromList(items).toJS;
+
+/// [kind] as a WIT `permission-kind`.
+JSString permissionKind(PermissionKind kind) =>
+    permissionKinds[kind.index].toJS;
+
+JSObject moment(Moment m) =>
+    record({'utcMs': toWide(m.utcMs), 'offsetMinutes': m.offsetMinutes.toJS});
+
+JSObject position(Position p) => record({
+  'label': p.label?.toJS,
+  'latitude': p.latitude?.toJS,
+  'longitude': p.longitude?.toJS,
+  'accuracy': p.accuracy?.toJS,
+  'when': p.when == null ? null : moment(p.when!),
+});

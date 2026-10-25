@@ -1,3 +1,5 @@
+import 'records.dart' show PermissionKind;
+
 /// What a call came to, by the engine's codes — and [reentrant], this
 /// binding's own, for a verb a `Player` was asked for while it was
 /// delivering.
@@ -12,6 +14,18 @@ enum Code {
   stopped(13),
   nothingAsked(14),
   unknownLocale(15),
+
+  /// A reading handed in for a kind the host has not granted.
+  notPermitted(16),
+
+  /// A reader's stand-in that does not read as one.
+  standIn(17),
+
+  /// `beginCountdown` or `expire` on a passage with no countdown.
+  noCountdown(18),
+
+  /// `expire` before `beginCountdown`.
+  countdownNotBegun(19),
   boardGone(20),
   nodeGone(21),
   invalidArgument(-1),
@@ -74,7 +88,9 @@ final class Failure {
   /// [Code.noSuchChoice]: the index taken.
   final int chosen;
 
-  /// The choice, locale, board or node a host or resume error is about.
+  /// The choice, locale, board or node a host or resume error is about; for
+  /// [Code.notPermitted] and [Code.standIn], the kind's
+  /// [PermissionKind.wire] name.
   final String subject;
 
   /// [Code.nodeGone]: the node.
@@ -96,7 +112,11 @@ sealed class RippleException implements Exception {
     Code.choiceSpent ||
     Code.stopped ||
     Code.nothingAsked ||
-    Code.unknownLocale => HostException(failure),
+    Code.unknownLocale ||
+    Code.notPermitted ||
+    Code.standIn ||
+    Code.noCountdown ||
+    Code.countdownNotBegun => HostException(failure),
     Code.boardGone || Code.nodeGone => ResumeException(failure),
     Code.trap => EngineTrapException(failure),
     Code.reentrant => ReentrantVerbException(failure),

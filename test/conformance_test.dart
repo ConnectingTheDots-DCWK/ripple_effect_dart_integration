@@ -44,11 +44,11 @@ Future<void> _playAll({required bool player}) async {
     );
     played++;
   }
-  // Twenty-four fixtures, three of which need the interpreter.
-  expect(played + skipped, 24, reason: 'fixtures found');
+  // Thirty-three fixtures, six of which need the interpreter.
+  expect(played + skipped, 33, reason: 'fixtures found');
   expect(
     skipped,
-    python ? 0 : 3,
+    python ? 0 : 6,
     reason: 'fixtures skipped for want of Python',
   );
 }
@@ -124,8 +124,36 @@ Future<_Played> _play(
     final _Host host = player
         ? _PlayerHost(campaign, session, config.seed, record)
         : _SessionHost(campaign, session, config.seed, record);
+    // What the host knows before the story starts — the instant it is
+    // played at, the reader's answers and their stand-ins — told again to a
+    // resumed session, which starts with every kind unanswered.
+    final now = switch (input['now']) {
+      TextValue(:final value) => _moment(value),
+      _ => null,
+    };
+    final answered = <PermissionKind, bool>{
+      for (final (kind, granted) in _byKind(input['permit']))
+        kind: (granted as BoolValue).value,
+    };
+    final standIns = [
+      for (final (kind, typed) in _byKind(input['standIns']))
+        (kind, (typed as TextValue).value),
+    ];
+    void tell() {
+      if (now != null) host.session.setNow(now);
+      for (final MapEntry(key: kind, value: granted) in answered.entries) {
+        // Before `start`, so an answer answers nothing.
+        host.session.permit(kind, granted: granted);
+      }
+      for (final (kind, typed) in standIns) {
+        // A time typed without an offset is read at UTC.
+        host.session.setStandIn(kind, typed, localOffsetMinutes: 0);
+      }
+    }
+
     try {
       String? saved;
+      tell();
       host.start();
       for (final move in (input['moves']! as ListValue).items) {
         if (_over(host.turn) && saved == null) break;
@@ -146,14 +174,36 @@ Future<_Played> _play(
                   'a move pauses where the story is not waiting',
                 ));
           case 'resume':
-            host.resume(saved!);
+            host.resume(saved!, tell);
             saved = null;
           case 'restart':
             host.restart();
+          // A fixture's clock never runs a countdown out by itself: the
+          // moves say when.
+          case 'countdown':
+            if (host.turn is! Show) {
+              throw StateError('a countdown begins where no passage is');
+            }
+            host.beginCountdown();
+          case 'expire':
+            if (host.turn is! Show) {
+              throw StateError('a countdown runs out where no passage is');
+            }
+            host.expire();
+          case 'permit':
+            final kind = PermissionKind.fromWire(
+              (move['kind']! as TextValue).value,
+            )!;
+            final granted = move['granted'] == const BoolValue(true);
+            answered
+              ..remove(kind)
+              ..[kind] = granted;
+            host.permit(kind, granted);
         }
       }
-      // The reader has left: the story goes on by itself until it is over.
-      while (!_over(host.turn)) {
+      // The reader has left: the story goes on by itself until it is over —
+      // or never begins, when nobody answered what it asked.
+      while (!_over(host.turn) && host.turn is! Permit) {
         switch (host.turn) {
           case Show():
             host.leave();
@@ -176,6 +226,31 @@ Future<_Played> _play(
 }
 
 bool _over(Turn? turn) => turn == null || turn.isOver;
+
+/// A fixture's map of kinds, in the order it was written.
+List<(PermissionKind, Value)> _byKind(Value? map) => switch (map) {
+  MapValue(:final entries) => [
+    for (final MapEntry(:key, :value) in entries.entries)
+      (PermissionKind.fromWire(key)!, value),
+  ],
+  _ => const [],
+};
+
+/// An ISO 8601 instant as the host hands it in: its UTC milliseconds and
+/// the offset it was written at, UTC when it names none.
+Moment _moment(String iso) {
+  final zone = RegExp(r'(Z|[+-]\d\d:?\d\d)$').firstMatch(iso)?.group(1);
+  final at = DateTime.parse(zone == null ? '${iso}Z' : iso);
+  var offset = 0;
+  if (zone != null && zone != 'Z') {
+    final digits = zone.replaceAll(':', '');
+    offset =
+        (int.parse(digits.substring(1, 3)) * 60 +
+            int.parse(digits.substring(3, 5))) *
+        (digits.startsWith('-') ? -1 : 1);
+  }
+  return Moment(at.millisecondsSinceEpoch, offset);
+}
 
 final class _Played {
   final List<Value> trace = [];
@@ -202,6 +277,16 @@ final class _Recorder {
             ('choices', [for (final choice in passage.choices) choice.text]),
             if (passage.untranslated case final untranslated?)
               ('untranslated', untranslated),
+            if (passage.timer case final timer?)
+              (
+                'timer',
+                {
+                  'after': timer.afterMs,
+                  'timeout': timer.timeoutMs,
+                  'visible': timer.visible,
+                  'default': timer.defaultChoice,
+                },
+              ),
           ]),
         );
       case Ask(:final prompt):
@@ -213,9 +298,34 @@ final class _Recorder {
               'fields',
               [
                 for (final field in prompt.fields)
-                  {'name': field.name, 'type': field.type},
+                  {
+                    'name': field.name,
+                    'type': field.type,
+                    if (field.optional) 'optional': true,
+                    if (field.options.isNotEmpty)
+                      'options': [
+                        for (final option in field.options) option.id,
+                      ],
+                  },
               ],
             ),
+          ]),
+        );
+      case Permit(:final kinds):
+        into.trace.add(
+          map([
+            ('kind', 'permit'),
+            ('kinds', [for (final kind in kinds) kind.wire]),
+          ]),
+        );
+      case Notice(:final code, :final kind, :final node, :final message):
+        into.trace.add(
+          map([
+            ('kind', 'notice'),
+            ('code', code),
+            ('of', kind.wire),
+            if (node != null) ('node', node),
+            ('message', message),
           ]),
         );
       case Jumped(:final board, :final node):
@@ -277,14 +387,21 @@ final class _Recorder {
 // The same verbs whichever API is underneath, and where the story is.
 abstract interface class _Host {
   Turn? get turn;
+  Session get session;
   void start();
   void choose(int index);
   void leave();
   void answer(Map<String, Value>? values);
   void elapsed();
+  void beginCountdown();
+  void expire();
+  void permit(PermissionKind kind, bool granted);
   void setLocale(String locale);
   String? pause();
-  void resume(String save);
+
+  /// A new session from [save]: [tell] tells it what the host knows, before
+  /// it starts.
+  void resume(String save, void Function() tell);
   void restart();
   List<Entity> entities();
   void dispose();
@@ -298,6 +415,7 @@ final class _SessionHost implements _Host {
   final Campaign campaign;
   final int seed;
   final _Recorder record;
+  @override
   Session session;
 
   @override
@@ -319,6 +437,16 @@ final class _SessionHost implements _Host {
   void elapsed() => _settle(session.elapsed());
 
   @override
+  void beginCountdown() => _settle(session.beginCountdown());
+
+  @override
+  void expire() => _settle(session.expire());
+
+  @override
+  void permit(PermissionKind kind, bool granted) =>
+      _settle(session.permit(kind, granted: granted));
+
+  @override
   void setLocale(String locale) => _settle(session.setLocale(locale));
 
   @override
@@ -329,7 +457,7 @@ final class _SessionHost implements _Host {
   }
 
   @override
-  void resume(String save) {
+  void resume(String save, void Function() tell) {
     final generator = session.generator;
     session.dispose();
     session = Session.resume(
@@ -338,6 +466,7 @@ final class _SessionHost implements _Host {
       seed: seed,
       options: fixtureOptions(),
     )..generator = generator;
+    tell();
     _settle(session.start());
   }
 
@@ -379,6 +508,9 @@ final class _PlayerHost implements _Host {
   Turn? get turn => player.turn;
 
   @override
+  Session get session => player.session;
+
+  @override
   void start() => _run(player.start);
 
   @override
@@ -394,6 +526,16 @@ final class _PlayerHost implements _Host {
   void elapsed() => player.session.elapsed().forEach(record.record);
 
   @override
+  void beginCountdown() => _run(player.beginCountdown);
+
+  @override
+  void expire() => _run(player.expire);
+
+  @override
+  void permit(PermissionKind kind, bool granted) =>
+      _run(() => player.permit(kind, granted: granted));
+
+  @override
   void setLocale(String locale) => _run(() => player.setLocale(locale));
 
   @override
@@ -404,13 +546,14 @@ final class _PlayerHost implements _Host {
   }
 
   @override
-  void resume(String save) {
+  void resume(String save, void Function() tell) {
     final generator = player.session.generator;
     player.dispose();
     player = _make(
       Session.resume(campaign, save, seed: seed, options: fixtureOptions())
         ..generator = generator,
     );
+    tell();
     _run(player.start);
   }
 
@@ -423,11 +566,13 @@ final class _PlayerHost implements _Host {
   @override
   void dispose() => player.dispose();
 
+  // No countdowns of its own: a fixture's clock says when, by its moves.
   Player _make(Session session) => Player(
     session,
     onEffect: record.record,
     onError: (error, stack) => fail('$error\n$stack'),
     now: () => now,
+    countdowns: false,
   );
 
   void _run(void Function() verb) {

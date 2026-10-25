@@ -15,8 +15,8 @@ enum Untranslated {
 /// The engine's budgets and policies. `SessionOptions()` is the engine's
 /// own; change what you mean to with [copyWith].
 final class SessionOptions {
-  /// The engine's own budgets and policies, as engine 1.5 gives them.
-  /// `test/options_test.dart` holds them to the native engine's
+  /// The engine's own budgets and policies, as engine 1.6 gives them.
+  /// `test/tables_test.dart` holds them to the native engine's
   /// `ripple_session_options_default`, so the two backends cannot drift.
   const SessionOptions()
     : stepBudget = 1048576,
