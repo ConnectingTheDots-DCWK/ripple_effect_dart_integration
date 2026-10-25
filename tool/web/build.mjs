@@ -12,6 +12,9 @@
 //   dart run tool/engine.dart fetch --web     # the pinned components, checked
 //   (cd tool/web && npm ci) && node tool/web/build.mjs
 //
+// With RIPPLE_ENGINE_TREE set, both read the tree's components instead, from
+// out/engine/tree/ — an unreleased engine for the suite, never published.
+//
 // `--instantiation async` leaves loading the core modules to the binding,
 // and `--no-nodejs-compat` drops jco's own Node loader — the JS binding's
 // transpile.ts, step for step.
@@ -23,7 +26,9 @@ import { build } from 'esbuild';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
-const engine = JSON.parse(readFileSync(join(root, 'engine.json'), 'utf8')).engine;
+const engine = process.env.RIPPLE_ENGINE_TREE
+  ? 'tree'
+  : JSON.parse(readFileSync(join(root, 'engine.json'), 'utf8')).engine;
 const out = join(root, 'lib', 'src', 'web', 'engine');
 const jco = join(here, 'node_modules', '@bytecodealliance', 'jco', 'dist', 'jco.js');
 
@@ -74,4 +79,4 @@ copyFileSync(join(here, 'bridge.js'), join(out, 'bridge.js'));
 // The placeholders a checkout has, so that the pubspec's asset folders exist
 // before anything is generated into them.
 for (const dir of ['', 'python', 'no-python']) writeFileSync(join(out, dir, '.gitkeep'), '');
-console.log(`web: engine ${engine}'s components, into ${out}`);
+console.log(`web: engine ${engine === 'tree' ? process.env.RIPPLE_ENGINE_TREE : engine}'s components, into ${out}`);

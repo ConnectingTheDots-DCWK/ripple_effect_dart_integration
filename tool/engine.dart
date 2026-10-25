@@ -11,6 +11,13 @@
 // every fixture and every file in it — which is how a browser test, which
 // cannot list a directory, finds them.
 //
+// With RIPPLE_ENGINE_TREE set — a ripple_effect checkout, the variable the
+// other bindings read — `--conformance` and `--web` take that tree's
+// fixtures and the components its `tool/build_wasm.sh` built, unverified,
+// into `out/engine/tree/` rather than a release's: what the web suite plays
+// an unreleased engine with. `--target` is the hook's business there, by
+// the `engine_tree` user-define `tool/variant.dart` writes.
+//
 // Everything lands under `out/engine/<engine>/`, which is never committed:
 // the engine is under the Runtime Licence, not this repository's.
 import 'dart:convert';
@@ -47,6 +54,16 @@ Future<void> main(List<String> args) async {
     }
   }
   final root = Platform.script.resolve('../');
+  final tree = Platform.environment['RIPPLE_ENGINE_TREE'] ?? '';
+  if (tree.isNotEmpty) {
+    fromTree(
+      Directory(tree),
+      Directory.fromUri(root.resolve('out/engine/tree')),
+      conformance: conformance,
+      web: web,
+    );
+    return;
+  }
   final cache = EngineCache(
     pin: EnginePin.read(File.fromUri(root.resolve('engine.json'))),
     root: Directory.fromUri(root.resolve('out/engine/')),
@@ -69,6 +86,61 @@ Future<void> main(List<String> args) async {
   } on EngineUnavailable catch (e) {
     stderr.writeln(e);
     exit(1);
+  }
+}
+
+/// The tree's fixtures and built components, laid out as a release's are
+/// unpacked, under [into].
+void fromTree(
+  Directory tree,
+  Directory into, {
+  required bool conformance,
+  required bool web,
+}) {
+  if (conformance) {
+    final fixtures = Directory('${into.path}/conformance/fixtures');
+    if (fixtures.existsSync()) fixtures.deleteSync(recursive: true);
+    _copy(
+      Directory('${tree.path}/packages/ripple_runtime/test/fixtures'),
+      fixtures,
+    );
+    writeIndex(fixtures);
+    stdout.writeln(fixtures.parent.path);
+  }
+  if (web) {
+    for (final variant in [kPython, kNoPython]) {
+      final built = File(
+        '${tree.path}/target/wasm/$variant/ripple_engine.wasm',
+      );
+      if (!built.existsSync()) {
+        stderr.writeln(
+          'engine: ${built.path} is missing; run `bash tool/build_wasm.sh` '
+          'in ${tree.path} first',
+        );
+        exit(1);
+      }
+      final unpacked = Directory('${into.path}/$variant/$kComponent');
+      File('${unpacked.path}/lib/ripple_engine.wasm')
+        ..parent.createSync(recursive: true)
+        ..writeAsBytesSync(built.readAsBytesSync());
+      File('${unpacked.path}/NOTICE').writeAsStringSync(
+        'An UNVERIFIED engine, built from ${tree.absolute.path}: not a '
+        'release, and never to be published.\n',
+      );
+      stdout.writeln(unpacked.path);
+    }
+  }
+}
+
+void _copy(Directory from, Directory to) {
+  if (!from.existsSync()) {
+    stderr.writeln('engine: no fixtures at ${from.path}');
+    exit(1);
+  }
+  for (final entry in from.listSync(recursive: true).whereType<File>()) {
+    File('${to.path}/${entry.path.substring(from.path.length + 1)}')
+      ..parent.createSync(recursive: true)
+      ..writeAsBytesSync(entry.readAsBytesSync());
   }
 }
 

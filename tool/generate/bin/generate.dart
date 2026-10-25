@@ -6,6 +6,9 @@
 //   cd tool/generate && dart run bin/generate.dart            the pinned header
 //   cd tool/generate && dart run bin/generate.dart <header>   another one
 //
+// With RIPPLE_ENGINE_TREE set, the header is that checkout's, as the build
+// hook's `engine_tree` library is.
+//
 // Writes:
 //   lib/src/interop/ripple.g.dart   ffigen's `@Native` bindings
 //   test/layout.json                clang's size and offsets for every record
@@ -81,6 +84,10 @@ Never _die(String message) {
 }
 
 Future<File> _pinnedHeader(Uri root) async {
+  final tree = Platform.environment['RIPPLE_ENGINE_TREE'] ?? '';
+  if (tree.isNotEmpty) {
+    return File('$tree/crates/ripple-capi/include/ripple/ripple.h').absolute;
+  }
   final run = await Process.run('dart', [
     'run',
     'tool/engine.dart',

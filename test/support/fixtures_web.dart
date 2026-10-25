@@ -24,21 +24,25 @@ Future<String> _text(String path) async => utf8.decode(await _get(path));
 
 /// The variant `tool/variant.dart` last chose (`out/variant.json`), which the
 /// web suite loads — dart2wasm under `dart test` takes no define — and the
-/// engine from this package's own assets.
+/// engine from this package's own assets. The fixtures are the pinned
+/// release's, or, when the engine loaded is another than the pin's — one
+/// `tool/web` built from a RIPPLE_ENGINE_TREE — that tree's
+/// (`tool/engine.dart fetch --conformance`, with the variable set).
 Future<void> setUpEngine() async {
   final chosen =
       jsonDecode(await _text('../out/variant.json')) as Map<String, Object?>;
   _variant = chosen['variant']! as String;
   debugPython = _variant == 'python';
-  final pin = jsonDecode(await _text('../engine.json')) as Map<String, Object?>;
-  _fixtures = '../out/engine/${pin['engine']}/conformance/fixtures';
-  _index =
-      jsonDecode(await _text('$_fixtures/index.json')) as Map<String, Object?>;
   await RippleEngine.load(
     base: Uri.parse(
       web.document.baseURI,
     ).resolve('../packages/ripplefx_engine/src/web/engine/'),
   );
+  final pin = jsonDecode(await _text('../engine.json')) as Map<String, Object?>;
+  final engine = RippleEngine.version == pin['engine'] ? pin['engine'] : 'tree';
+  _fixtures = '../out/engine/$engine/conformance/fixtures';
+  _index =
+      jsonDecode(await _text('$_fixtures/index.json')) as Map<String, Object?>;
 }
 
 String? askedVariant() => _variant;
