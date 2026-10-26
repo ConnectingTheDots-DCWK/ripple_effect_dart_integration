@@ -1,7 +1,7 @@
 {
   "$comment": "The engine release this binding builds against: its version, the key its manifest is signed with, and the digest of every archive it may download. scripts/pin-engine.sh writes it from a verified manifest; nothing else should. A null digest means no release is pinned yet: configure with RIPPLE_ENGINE_TREE or RIPPLE_ENGINE_DIR instead.",
-  "engine": "1.5.4",
-  "contract": "1.5",
+  "engine": "1.6.0",
+  "contract": "1.6",
   "keyId": "0f6fb4654dbef4b7",
   "urls": [
     "https://ripplefx.app/go/engine/{tag}/{file}",
@@ -10,107 +10,107 @@
   "archives": {
     "python": {
       "x86_64-unknown-linux-gnu": {
-        "file": "ripple-engine-c-1.5.4-x86_64-unknown-linux-gnu.tar.gz",
-        "sha256": "60cb160eeabee2bd94c78e1f1c4b36acc02dfb60f8ab4661c6754ff32d98e64a"
+        "file": "ripple-engine-c-1.6.0-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "19f64dec9f9763ba0482e5ac2c2734b8a7d4765f3719602491c7601ac69176ef"
       },
       "aarch64-unknown-linux-gnu": {
-        "file": "ripple-engine-c-1.5.4-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "883eb7f10235e52298997ab3ddcd914afed507660ad728f51092032939c5c8ff"
+        "file": "ripple-engine-c-1.6.0-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "ef7014f17221950a01c1567d7249e7170846201aef3b3597037895be3a7236f4"
       },
       "x86_64-apple-darwin": {
-        "file": "ripple-engine-c-1.5.4-x86_64-apple-darwin.tar.gz",
-        "sha256": "350285fda3a434d711c439c9ef549b5a428ac3cc0f0bf04087231c1de31dc3de"
+        "file": "ripple-engine-c-1.6.0-x86_64-apple-darwin.tar.gz",
+        "sha256": "b6c4c853d16511383e8b2ada78e2ce26d4db15333279a3d4eb10fb3819ce8de8"
       },
       "aarch64-apple-darwin": {
-        "file": "ripple-engine-c-1.5.4-aarch64-apple-darwin.tar.gz",
-        "sha256": "ed17c836782d9883958f92371791793a5215d96f9d89e59ba3e20d22f492c2ec"
+        "file": "ripple-engine-c-1.6.0-aarch64-apple-darwin.tar.gz",
+        "sha256": "385de4887e0edb61f972efcbf41891080dbb899f560b777d8cad3d495c70c067"
       },
       "x86_64-pc-windows-msvc": {
-        "file": "ripple-engine-c-1.5.4-x86_64-pc-windows-msvc.tar.gz",
-        "sha256": "cddaa9c5edc3f558441da6291297f194c3e5557111f65c9b7e6494a3628cd549"
+        "file": "ripple-engine-c-1.6.0-x86_64-pc-windows-msvc.tar.gz",
+        "sha256": "fe2ff05f3e8a60cab8cc7a50c8e2d8d30fba9320559bc02975e123622a3c4bdc"
       },
       "aarch64-pc-windows-msvc": {
-        "file": "ripple-engine-c-1.5.4-aarch64-pc-windows-msvc.tar.gz",
-        "sha256": "4087fe571de2642ffb56eac6a2ea46038869ef5ba4d4511a96e090cf37e5e40e"
+        "file": "ripple-engine-c-1.6.0-aarch64-pc-windows-msvc.tar.gz",
+        "sha256": "f1613166e00e7b927524d41d645532cce13f3150a86c6c1754a08bebc82b958b"
       },
       "aarch64-linux-android": {
-        "file": "ripple-engine-c-1.5.4-aarch64-linux-android.tar.gz",
-        "sha256": "0730bab5828bea425df6115eca6ba4be9fdb65d287aad3e4de3d65e2338ea63c"
+        "file": "ripple-engine-c-1.6.0-aarch64-linux-android.tar.gz",
+        "sha256": "5c760b5b44bbd7b40a98a7e91ee8a2ee5ec3e720f757eea51eee2d98ea57d2bb"
       },
       "x86_64-linux-android": {
-        "file": "ripple-engine-c-1.5.4-x86_64-linux-android.tar.gz",
-        "sha256": "aee4f0c1f2562f824d45fc98c3d8dc144cc632b843869322644e535695de8c3a"
+        "file": "ripple-engine-c-1.6.0-x86_64-linux-android.tar.gz",
+        "sha256": "579941f312cd758232cdf5e0635a27c3718967699522bcca988ce757b06aee80"
       },
       "aarch64-apple-ios": {
-        "file": "ripple-engine-c-1.5.4-aarch64-apple-ios.tar.gz",
-        "sha256": "13c9c291aa332698801e91293ae947e6f98d5d412054ec86e80d3341696530d5"
+        "file": "ripple-engine-c-1.6.0-aarch64-apple-ios.tar.gz",
+        "sha256": "4ae17ae46837534ba30ec4d67dcce73d55a5323b7c0362535ee0cbcc3f8bae8d"
       },
       "aarch64-apple-ios-sim": {
-        "file": "ripple-engine-c-1.5.4-aarch64-apple-ios-sim.tar.gz",
-        "sha256": "043db247f63ab9d93afd390f1b59feeff35a1ec89d321ef7ab4010fa3d2e6fc7"
+        "file": "ripple-engine-c-1.6.0-aarch64-apple-ios-sim.tar.gz",
+        "sha256": "3e4fc5b7fa31370b9d0fd86bb0d86cdfbcb3ce2dd5a247377102eb3f0b9f10e5"
       },
       "wasm32-unknown-emscripten": {
-        "file": "ripple-engine-c-1.5.4-wasm32-unknown-emscripten.tar.gz",
-        "sha256": "28100adf5084067684eb177e826c477ca4a2d2298a38612d0baa8269f89a067d"
+        "file": "ripple-engine-c-1.6.0-wasm32-unknown-emscripten.tar.gz",
+        "sha256": "b52554bd0202db3e39584b0d0238609adac8ef9572b1a91ad545830a13eafe22"
       },
       "wasm32-component": {
-        "file": "ripple-engine-1.5.4-wasm32-component.tar.gz",
-        "sha256": "85225a9d89c2872935c14551484a35b4d77482b1b5612ed8991081492a0ab768"
+        "file": "ripple-engine-1.6.0-wasm32-component.tar.gz",
+        "sha256": "394d8bb8118b6f64620712a7f5dc26212cada792222dc6c46a5d63fdc93252a7"
       }
     },
     "no-python": {
       "x86_64-unknown-linux-gnu": {
-        "file": "ripple-engine-c-1.5.4-no-python-x86_64-unknown-linux-gnu.tar.gz",
-        "sha256": "04e72b6325401f63995d1a1cb694038c6d263965cc28f639d1c200f393ed8999"
+        "file": "ripple-engine-c-1.6.0-no-python-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "cd1d0a49e3d9d05e893924f42feae713805ea57769d26718aacec21bef5f2a45"
       },
       "aarch64-unknown-linux-gnu": {
-        "file": "ripple-engine-c-1.5.4-no-python-aarch64-unknown-linux-gnu.tar.gz",
-        "sha256": "90f1e4e78867f3f4546579db80dc7ec51ce9ff8a99d6c72efda982e080e3e1ca"
+        "file": "ripple-engine-c-1.6.0-no-python-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "25127f61bb1bcf52b0550eb31de79ea993d105188ebaf6db748d122d9195244d"
       },
       "x86_64-apple-darwin": {
-        "file": "ripple-engine-c-1.5.4-no-python-x86_64-apple-darwin.tar.gz",
-        "sha256": "72630d32809997e84b06eec1dff87c6fea5f693e4d289c5d542ecf0acaf1d834"
+        "file": "ripple-engine-c-1.6.0-no-python-x86_64-apple-darwin.tar.gz",
+        "sha256": "6e262127dd0cb314b2bd3b9cd6fccef2baf0434409c8b71d7573555604cc2b25"
       },
       "aarch64-apple-darwin": {
-        "file": "ripple-engine-c-1.5.4-no-python-aarch64-apple-darwin.tar.gz",
-        "sha256": "d6ac0dc553aa012d1049a87280a16b4f10b1ae55cf1ca34afacfb576c2fae628"
+        "file": "ripple-engine-c-1.6.0-no-python-aarch64-apple-darwin.tar.gz",
+        "sha256": "2ff8bd1e3de02a6bafad2434e982152b0dbc12e6c188c2e9e30f49b78f03c10b"
       },
       "x86_64-pc-windows-msvc": {
-        "file": "ripple-engine-c-1.5.4-no-python-x86_64-pc-windows-msvc.tar.gz",
-        "sha256": "fc22d9e5a7aa98a49b4d1f9d3a4d6ee64c82c13730abc71e7af8568b3a2d0cc7"
+        "file": "ripple-engine-c-1.6.0-no-python-x86_64-pc-windows-msvc.tar.gz",
+        "sha256": "7a13f189eff8f9f69e98ed2b06f44554503b5433da19e773f558f42f34c213f2"
       },
       "aarch64-pc-windows-msvc": {
-        "file": "ripple-engine-c-1.5.4-no-python-aarch64-pc-windows-msvc.tar.gz",
-        "sha256": "464262cc4109033479ba9f6923cadf3ac92180ff3998d6892e25eddd32cb6feb"
+        "file": "ripple-engine-c-1.6.0-no-python-aarch64-pc-windows-msvc.tar.gz",
+        "sha256": "eb83a4ff787468c28ad63ff083fb2541029d40a38975f505f013e08786efa3e9"
       },
       "aarch64-linux-android": {
-        "file": "ripple-engine-c-1.5.4-no-python-aarch64-linux-android.tar.gz",
-        "sha256": "74ddc0004261be1662a28250a7c36abbc37acea6c2f598624c52a8553c7c0b9f"
+        "file": "ripple-engine-c-1.6.0-no-python-aarch64-linux-android.tar.gz",
+        "sha256": "4f8325e6b67b97151bad3823796b4fd38d6c39e1c0569be05ce7b936714e9d9d"
       },
       "x86_64-linux-android": {
-        "file": "ripple-engine-c-1.5.4-no-python-x86_64-linux-android.tar.gz",
-        "sha256": "6a9c7d08f32ce477a567b6c606e763740813ba43ba0dbd13ec59ce11b1db52f7"
+        "file": "ripple-engine-c-1.6.0-no-python-x86_64-linux-android.tar.gz",
+        "sha256": "6742197f74a1bb21101930fe8e95d465cbc92111de230b6aead120dbf6c2b80a"
       },
       "aarch64-apple-ios": {
-        "file": "ripple-engine-c-1.5.4-no-python-aarch64-apple-ios.tar.gz",
-        "sha256": "21739351de1a5f313ae482b13d389cd0dcb50a27b537801c4d1388e59590eaec"
+        "file": "ripple-engine-c-1.6.0-no-python-aarch64-apple-ios.tar.gz",
+        "sha256": "ce3523ddebe1b44cc58b70355f5fd2d73cab73b88c7e20133d2d1dbf099b3c3f"
       },
       "aarch64-apple-ios-sim": {
-        "file": "ripple-engine-c-1.5.4-no-python-aarch64-apple-ios-sim.tar.gz",
-        "sha256": "a4535a7b54252c4afbc204ab5fac4a626368104eb8abf96b0077444756836297"
+        "file": "ripple-engine-c-1.6.0-no-python-aarch64-apple-ios-sim.tar.gz",
+        "sha256": "139c0b32d4de449eeccf57268d8ac6fe0b03af6aaf4a7973ae32b1a4b39645a9"
       },
       "wasm32-unknown-emscripten": {
-        "file": "ripple-engine-c-1.5.4-no-python-wasm32-unknown-emscripten.tar.gz",
-        "sha256": "73bb5175b50f8a5a559311be0a0e700aee8b5969bf76fc4efdc97164030044d2"
+        "file": "ripple-engine-c-1.6.0-no-python-wasm32-unknown-emscripten.tar.gz",
+        "sha256": "307da0f38af668725b5831729261af3fd98d9f9644d57fb73fe489e4e846e076"
       },
       "wasm32-component": {
-        "file": "ripple-engine-1.5.4-no-python-wasm32-component.tar.gz",
-        "sha256": "705bef5ea227545c4a5e82f4f92f319b2a9ac35ecffc7e848ec514a13d2867ff"
+        "file": "ripple-engine-1.6.0-no-python-wasm32-component.tar.gz",
+        "sha256": "9cb3a7b953d050aa127c2414d0ad6cb4bb683a00b9d2fb0443f76c503d4d5a08"
       }
     },
     "conformance": {
-      "file": "ripple-conformance-1.5.4.tar.gz",
-      "sha256": "1268e5489f3a52f4178ad7b0eb8d6eb0d64fee12f3c1b7786e3a2a902e32df4a"
+      "file": "ripple-conformance-1.6.0.tar.gz",
+      "sha256": "146faa21cc3ec21daeb3b4708b8996aa5e323d90d114b36d406736d1812f92c0"
     }
   }
 }
