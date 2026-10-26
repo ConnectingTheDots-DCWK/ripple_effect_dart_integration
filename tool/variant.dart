@@ -3,6 +3,10 @@
 //   dart run tool/variant.dart no-python   # the no-python engine
 //   dart run tool/variant.dart python      # back to the default
 //
+// With RIPPLE_ENGINE_TREE set — the variable the other bindings read — the
+// block also names that checkout as `engine_tree`, so the hook builds an
+// unreleased engine there with cargo instead of downloading the pin's.
+//
 // The hooks runner gives a hook its user-defines from the root pubspec and
 // from nowhere else — not the environment, not pubspec_overrides.yaml — so
 // this writes the block a consumer would write in theirs at the end of this
@@ -31,14 +35,22 @@ void main(List<String> args) {
     final after = text.substring(end + _end.length).trimLeft();
     text = '$before\n$after';
   }
-  if (args.first == 'no-python') {
+  final tree = Platform.environment['RIPPLE_ENGINE_TREE'] ?? '';
+  final defines = [
+    if (args.first == 'no-python') 'python: false',
+    if (tree.isNotEmpty) 'engine_tree: ${Directory(tree).absolute.path}',
+  ];
+  if (defines.isNotEmpty) {
     text =
         '${text.trimRight()}\n\n$_begin\nhooks:\n  user_defines:\n'
-        '    ripplefx_engine:\n      python: false\n$_end\n';
+        '    ripplefx_engine:\n${defines.map((d) => '      $d\n').join()}'
+        '$_end\n';
   }
   pubspec.writeAsStringSync('${text.trimRight()}\n');
   File.fromUri(Platform.script.resolve('../out/variant.json'))
     ..parent.createSync(recursive: true)
     ..writeAsStringSync('{"variant": "${args.first}"}\n');
-  stdout.writeln('variant: ${args.first}');
+  stdout.writeln(
+    'variant: ${args.first}${tree.isEmpty ? '' : ', built from $tree'}',
+  );
 }

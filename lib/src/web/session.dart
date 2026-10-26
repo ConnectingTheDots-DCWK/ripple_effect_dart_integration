@@ -2,6 +2,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import '../effects.dart';
+import '../errors.dart';
 import '../records.dart';
 import '../session_types.dart';
 import '../value.dart';
@@ -91,6 +92,56 @@ final class Session {
 
   /// Answers a wait, once the host's clock says it is over.
   List<Effect> elapsed() => _batch('elapsed');
+
+  /// The host's clock says the shown passage's countdown begins, its
+  /// [ChoiceTimer.afterMs] after the passage was shown. Moves nothing: the
+  /// batch is the callbacks an author aimed at it, and empty when there are
+  /// none — `campaign-host-api.md` §4b.
+  List<Effect> beginCountdown() => _batch('beginCountdown');
+
+  /// The host's clock says the countdown ran out: the passage's default is
+  /// taken, as `choose` would take it, and the story runs to its next Turn.
+  List<Effect> expire() => _batch('expire');
+
+  /// The reader's answer for one kind, at any time — before [start]
+  /// included, which is how a host that already knows never shows the
+  /// [Permit] turn. On that turn, the answer to the last kind unanswered
+  /// begins the story. Answers are not saved: a resumed session asks again.
+  List<Effect> permit(PermissionKind kind, {required bool granted}) =>
+      _batch('permit', [to.permissionKind(kind), granted.toJS]);
+
+  /// What time it is, from the host — null for no clock. Before every verb
+  /// that can step, by a host that granted [PermissionKind.dateTime]; within
+  /// one verb time does not move.
+  void setNow(Moment? now) =>
+      _instance.call(handle, 'setNow', [now == null ? null : to.moment(now)]);
+
+  /// The host's last position fix — null for none. Refused with a
+  /// [HostException] of [Code.notPermitted] once the reader said no to
+  /// [PermissionKind.location]; a fix given before the answer is kept, and
+  /// read only if it is yes.
+  void setPosition(Position? position) => _instance.call(
+    handle,
+    'setPosition',
+    [position == null ? null : to.position(position)],
+  );
+
+  /// The reader's stand-in for [kind], as they typed it — what a story is
+  /// told whenever the real value is missing; null takes it away. A clock is
+  /// ISO 8601, and one typed without an offset is read at
+  /// [localOffsetMinutes] — the reader's own for that date, this machine's
+  /// zone on that date unless given. A position is `"lat, lon"`, or a
+  /// place's name. One that does not read is a [HostException] of
+  /// [Code.standIn], its message saying why.
+  void setStandIn(
+    PermissionKind kind,
+    String? typed, {
+    int? localOffsetMinutes,
+  }) => _instance.call(handle, 'setStandIn', [
+    to.permissionKind(kind),
+    typed?.toJS,
+    (localOffsetMinutes ?? standInOffset(kind, typed)).toJS,
+  ]);
 
   List<Effect> setLocale(String locale) => _batch('setLocale', [locale.toJS]);
 

@@ -15,8 +15,8 @@ enum Untranslated {
 /// The engine's budgets and policies. `SessionOptions()` is the engine's
 /// own; change what you mean to with [copyWith].
 final class SessionOptions {
-  /// The engine's own budgets and policies, as engine 1.5 gives them.
-  /// `test/options_test.dart` holds them to the native engine's
+  /// The engine's own budgets and policies, as engine 1.6 gives them.
+  /// `test/tables_test.dart` holds them to the native engine's
   /// `ripple_session_options_default`, so the two backends cannot drift.
   const SessionOptions()
     : stepBudget = 1048576,
@@ -150,4 +150,19 @@ final class Generator {
 
   final int lo;
   final int hi;
+}
+
+/// The offset a clock stand-in typed without one is read at, when the host
+/// gives none: this machine's zone on the typed date, not today's — across
+/// a change to or from summer time, today's is an hour off. Text that does
+/// not read as a local date and time, or carries its own offset, takes
+/// today's, which the engine then has no use for. Not exported: both
+/// backends' `setStandIn` default to it.
+int standInOffset(PermissionKind kind, String? typed) {
+  final local = kind == PermissionKind.dateTime && typed != null
+      ? DateTime.tryParse(typed.trim())
+      : null;
+  return (local != null && !local.isUtc ? local : DateTime.now())
+      .timeZoneOffset
+      .inMinutes;
 }

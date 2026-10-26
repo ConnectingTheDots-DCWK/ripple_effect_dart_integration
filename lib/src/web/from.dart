@@ -103,6 +103,7 @@ Manifest manifest(JSAny? m) => Manifest(
     ),
   ),
   needs: List.unmodifiable(list(m['needs'], str)),
+  permissions: List.unmodifiable(list(m['permissions'], str)),
 );
 
 Port _port(JSAny? p) => Port(
@@ -175,6 +176,14 @@ Passage passage(JSAny? p) => Passage(
   untranslated: strOr(p['untranslated']),
   soundscape: p['soundscape'] == null ? null : soundscape(p['soundscape']),
   silence: flag(p['silence']),
+  timer: p['timer'] == null ? null : _timer(p['timer']),
+);
+
+ChoiceTimer _timer(JSAny? t) => ChoiceTimer(
+  afterMs: wide(t['afterMs']),
+  timeoutMs: wide(t['timeoutMs']),
+  visible: flag(t['visible']),
+  defaultChoice: num(t['default']),
 );
 
 Prompt prompt(JSAny? p) => Prompt(
@@ -183,10 +192,28 @@ Prompt prompt(JSAny? p) => Prompt(
   List.unmodifiable(
     list(
       p['fields'],
-      (f) => PromptField(str(f['name']), str(f['type']), value(f['default'])),
+      (f) => PromptField(
+        str(f['name']),
+        str(f['type']),
+        value(f['default']),
+        label: str(f['label']),
+        placeholder: str(f['placeholder']),
+        optional: flag(f['optional']),
+        options: List.unmodifiable(
+          list(
+            f['options'],
+            (o) =>
+                PromptOption(str(o['id']), str(o['label']), value(o['value'])),
+          ),
+        ),
+      ),
     ),
   ),
 );
+
+/// A WIT `permission-kind`, by the C ABI's number.
+PermissionKind permissionKind(JSAny? kind) =>
+    PermissionKind.values[permissionKinds.indexOf(str(kind))];
 
 Ambience ambience(JSAny? a) =>
     Ambience(soundscape(a['soundscape']), num(a['board']), str(a['node']));
@@ -333,6 +360,13 @@ Effect effect(JSAny? e) {
     'hold' => Hold(wide(v)),
     'ended' => Ended(strOr(v['title']), ranOut: flag(v['ranOut'])),
     'failed' => Failed(str(v['message']), strOr(v['node'])),
+    'permit' => Permit(List.unmodifiable(list(v, permissionKind))),
+    'notice' => Notice(
+      code: str(v['code']),
+      kind: permissionKind(v['kind']),
+      node: strOr(v['node']),
+      message: str(v['message']),
+    ),
     _ => const Stopped(),
   };
 }

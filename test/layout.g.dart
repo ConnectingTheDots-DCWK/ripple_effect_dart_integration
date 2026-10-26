@@ -191,6 +191,18 @@ dartLayout = {
       'available': (32, (p) => p.cast<RippleChoice>().ref.available = true),
     },
   ),
+  'RippleChoiceTimer': (
+    ffi.sizeOf<RippleChoiceTimer>(),
+    {
+      'after_ms': (0, (p) => p.cast<RippleChoiceTimer>().ref.after_ms = 1),
+      'timeout_ms': (8, (p) => p.cast<RippleChoiceTimer>().ref.timeout_ms = 1),
+      'visible': (16, (p) => p.cast<RippleChoiceTimer>().ref.visible = true),
+      'default_choice': (
+        20,
+        (p) => p.cast<RippleChoiceTimer>().ref.default_choice = 1,
+      ),
+    },
+  ),
   'RippleConsoleResult': (
     ffi.sizeOf<RippleConsoleResult>(),
     {
@@ -353,6 +365,16 @@ dartLayout = {
         0,
         (p) =>
             p.cast<RippleEffectData>().ref.failed = ffi.Pointer.fromAddress(1),
+      ),
+      'permit': (
+        0,
+        (p) =>
+            p.cast<RippleEffectData>().ref.permit = ffi.Pointer.fromAddress(1),
+      ),
+      'notice': (
+        0,
+        (p) =>
+            p.cast<RippleEffectData>().ref.notice = ffi.Pointer.fromAddress(1),
       ),
     },
   ),
@@ -703,6 +725,15 @@ dartLayout = {
         (p) => p.cast<RippleManifest>().ref.needs = ffi.Pointer.fromAddress(1),
       ),
       'need_count': (272, (p) => p.cast<RippleManifest>().ref.need_count = 1),
+      'permissions': (
+        280,
+        (p) => p.cast<RippleManifest>().ref.permissions =
+            ffi.Pointer.fromAddress(1),
+      ),
+      'permission_count': (
+        288,
+        (p) => p.cast<RippleManifest>().ref.permission_count = 1,
+      ),
     },
   ),
   'RippleMediaLink': (
@@ -731,6 +762,16 @@ dartLayout = {
       'machine_count': (
         24,
         (p) => p.cast<RippleMemory>().ref.machine_count = 1,
+      ),
+    },
+  ),
+  'RippleMoment': (
+    ffi.sizeOf<RippleMoment>(),
+    {
+      'utc_ms': (0, (p) => p.cast<RippleMoment>().ref.utc_ms = 1),
+      'offset_minutes': (
+        8,
+        (p) => p.cast<RippleMoment>().ref.offset_minutes = 1,
       ),
     },
   ),
@@ -768,6 +809,35 @@ dartLayout = {
         96,
         (p) => p.cast<RippleNode>().ref.metadata.nodes =
             ffi.Pointer.fromAddress(1),
+      ),
+    },
+  ),
+  'RippleNotice': (
+    ffi.sizeOf<RippleNotice>(),
+    {
+      'code': (
+        0,
+        (p) => p.cast<RippleNotice>().ref.code.ptr = ffi.Pointer.fromAddress(1),
+      ),
+      'kind': (16, (p) => p.cast<RippleNotice>().ref.kind = 1),
+      'node': (
+        24,
+        (p) => p.cast<RippleNotice>().ref.node.ptr = ffi.Pointer.fromAddress(1),
+      ),
+      'message': (
+        40,
+        (p) =>
+            p.cast<RippleNotice>().ref.message.ptr = ffi.Pointer.fromAddress(1),
+      ),
+    },
+  ),
+  'RippleOptionalF64': (
+    ffi.sizeOf<RippleOptionalF64>(),
+    {
+      'present': (0, (p) => p.cast<RippleOptionalF64>().ref.present = true),
+      'value': (
+        8,
+        (p) => p.cast<RippleOptionalF64>().ref.value = 1.0000000000000002,
       ),
     },
   ),
@@ -849,6 +919,10 @@ dartLayout = {
             p.cast<RipplePassage>().ref.soundscape = ffi.Pointer.fromAddress(1),
       ),
       'silence': (144, (p) => p.cast<RipplePassage>().ref.silence = true),
+      'timer': (
+        152,
+        (p) => p.cast<RipplePassage>().ref.timer = ffi.Pointer.fromAddress(1),
+      ),
     },
   ),
   'RipplePaused': (
@@ -865,6 +939,16 @@ dartLayout = {
       'effect_count': (24, (p) => p.cast<RipplePaused>().ref.effect_count = 1),
     },
   ),
+  'RipplePermit': (
+    ffi.sizeOf<RipplePermit>(),
+    {
+      'kinds': (
+        0,
+        (p) => p.cast<RipplePermit>().ref.kinds = ffi.Pointer.fromAddress(1),
+      ),
+      'kind_count': (8, (p) => p.cast<RipplePermit>().ref.kind_count = 1),
+    },
+  ),
   'RipplePort': (
     ffi.sizeOf<RipplePort>(),
     {
@@ -878,6 +962,32 @@ dartLayout = {
         (p) => p.cast<RipplePort>().ref.edges = ffi.Pointer.fromAddress(1),
       ),
       'edge_count': (32, (p) => p.cast<RipplePort>().ref.edge_count = 1),
+    },
+  ),
+  'RipplePosition': (
+    ffi.sizeOf<RipplePosition>(),
+    {
+      'label': (
+        0,
+        (p) =>
+            p.cast<RipplePosition>().ref.label.ptr = ffi.Pointer.fromAddress(1),
+      ),
+      'latitude': (
+        16,
+        (p) => p.cast<RipplePosition>().ref.latitude.present = true,
+      ),
+      'longitude': (
+        32,
+        (p) => p.cast<RipplePosition>().ref.longitude.present = true,
+      ),
+      'accuracy': (
+        48,
+        (p) => p.cast<RipplePosition>().ref.accuracy.present = true,
+      ),
+      'when': (
+        64,
+        (p) => p.cast<RipplePosition>().ref.when = ffi.Pointer.fromAddress(1),
+      ),
     },
   ),
   'RippleProject': (
@@ -945,6 +1055,46 @@ dartLayout = {
       'default_value': (
         32,
         (p) => p.cast<RipplePromptField>().ref.default_value.nodes =
+            ffi.Pointer.fromAddress(1),
+      ),
+      'label': (
+        48,
+        (p) => p.cast<RipplePromptField>().ref.label.ptr =
+            ffi.Pointer.fromAddress(1),
+      ),
+      'placeholder': (
+        64,
+        (p) => p.cast<RipplePromptField>().ref.placeholder.ptr =
+            ffi.Pointer.fromAddress(1),
+      ),
+      'optional': (80, (p) => p.cast<RipplePromptField>().ref.optional = true),
+      'options': (
+        88,
+        (p) => p.cast<RipplePromptField>().ref.options =
+            ffi.Pointer.fromAddress(1),
+      ),
+      'option_count': (
+        96,
+        (p) => p.cast<RipplePromptField>().ref.option_count = 1,
+      ),
+    },
+  ),
+  'RipplePromptOption': (
+    ffi.sizeOf<RipplePromptOption>(),
+    {
+      'id': (
+        0,
+        (p) => p.cast<RipplePromptOption>().ref.id.ptr =
+            ffi.Pointer.fromAddress(1),
+      ),
+      'label': (
+        16,
+        (p) => p.cast<RipplePromptOption>().ref.label.ptr =
+            ffi.Pointer.fromAddress(1),
+      ),
+      'value': (
+        32,
+        (p) => p.cast<RipplePromptOption>().ref.value.nodes =
             ffi.Pointer.fromAddress(1),
       ),
     },

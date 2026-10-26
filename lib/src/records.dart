@@ -121,6 +121,7 @@ final class Manifest {
     required this.soundscapes,
     required this.cvars,
     required this.needs,
+    this.permissions = const [],
   });
 
   final int format;
@@ -143,6 +144,11 @@ final class Manifest {
 
   /// What the campaign needs of its host: `python`, when it runs scripts.
   final List<String> needs;
+
+  /// What the story reads of the world outside it, by wire name —
+  /// `dateTime`, `location` ([PermissionKind.wire]). The compiler lists
+  /// them, and a session asks about each before the story begins.
+  final List<String> permissions;
 }
 
 final class Edge {
@@ -232,6 +238,30 @@ final class MediaLink {
   final int media;
 }
 
+/// A passage's countdown — `campaign-host-api.md` §4b. The host's clock
+/// waits [afterMs] and calls `beginCountdown`, waits [timeoutMs] and calls
+/// `expire`; the engine measures none of it. `Player` does both when asked.
+final class ChoiceTimer {
+  const ChoiceTimer({
+    required this.afterMs,
+    required this.timeoutMs,
+    required this.visible,
+    required this.defaultChoice,
+  });
+
+  /// How long before the countdown begins; zero is at once.
+  final int afterMs;
+
+  /// How long it runs once begun; never zero.
+  final int timeoutMs;
+
+  /// Whether the author meant the reader to see it count.
+  final bool visible;
+
+  /// The index into the passage's choices taken when it runs out.
+  final int defaultChoice;
+}
+
 /// A passage the reader is on.
 final class Passage {
   const Passage({
@@ -245,6 +275,7 @@ final class Passage {
     this.untranslated,
     this.soundscape,
     required this.silence,
+    this.timer,
   });
 
   final String node;
@@ -261,14 +292,64 @@ final class Passage {
   final String? untranslated;
   final Soundscape? soundscape;
   final bool silence;
+
+  /// The passage's countdown; null when it waits for the reader for as long
+  /// as they like. A re-rendered passage — `setLocale` — is the same visit,
+  /// with the same countdown.
+  final ChoiceTimer? timer;
 }
 
+/// One fixed answer a form field offers.
+final class PromptOption {
+  const PromptOption(this.id, this.label, this.value);
+
+  /// What a host answers with; stable across languages.
+  final String id;
+
+  /// What the reader is shown, in the reader's language.
+  final String label;
+
+  /// What the story is handed when it is picked, of the field's type.
+  final Value value;
+}
+
+/// One field of a form. [name] is its ID, what an answer is keyed by;
+/// [label] is what the reader is shown.
 final class PromptField {
-  const PromptField(this.name, this.type, this.defaultValue);
+  const PromptField(
+    this.name,
+    this.type,
+    this.defaultValue, {
+    this.label = '',
+    this.placeholder = '',
+    this.optional = false,
+    this.options = const [],
+  });
 
   final String name;
   final String type;
+
+  /// What the control is filled in with: a default nobody edits is the
+  /// answer. Null for a field that declares none.
   final Value defaultValue;
+
+  /// What the reader is shown for the field, in the reader's language —
+  /// [name] where the author wrote nothing.
+  final String label;
+
+  /// The hint drawn while the field is empty; empty for none. Never the
+  /// answer.
+  final String placeholder;
+
+  /// Whether the reader may leave the field empty, which answers null. A
+  /// required field is not submitted empty: a host keeps the form open.
+  final bool optional;
+
+  /// The fixed answers the reader picks from, in order: one for a scalar
+  /// type, any number for a `…List`. Empty for a field the reader types
+  /// into. Answer with the picked options' [PromptOption.id]s, never their
+  /// labels or values.
+  final List<PromptOption> options;
 }
 
 /// A form the story asks the reader to fill.
@@ -300,6 +381,78 @@ enum RunEventKind {
 }
 
 enum PayloadKind { present, withheld, absent }
+
+/// What a story may read of the world outside it (ADR
+/// *a-campaign-asks-before-it-reads*), in `RipplePermissionKind`'s order. The
+/// microphone is not one.
+enum PermissionKind {
+  dateTime('dateTime'),
+  location('location');
+
+  const PermissionKind(this.wire);
+
+  /// The name the manifest's `permissions` and a stand-in's failure use.
+  final String wire;
+
+  /// The kind [wire] names, or null for one this binding does not know.
+  static PermissionKind? fromWire(String wire) {
+    for (final kind in values) {
+      if (kind.wire == wire) return kind;
+    }
+    return null;
+  }
+}
+
+/// An instant from the host: milliseconds since the epoch, and the offset in
+/// minutes the reader's wall clock is at. What `datetime.now()` answers in a
+/// story, once the reader allowed [PermissionKind.dateTime].
+final class Moment {
+  const Moment(this.utcMs, this.offsetMinutes);
+
+  /// [time] as an instant, at its own offset: a local [DateTime] keeps the
+  /// zone the program runs in, a UTC one is at zero.
+  Moment.of(DateTime time)
+    : utcMs = time.millisecondsSinceEpoch,
+      offsetMinutes = time.timeZoneOffset.inMinutes;
+
+  /// Now, on this machine's clock and in its zone.
+  factory Moment.now() => Moment.of(DateTime.now());
+
+  final int utcMs;
+  final int offsetMinutes;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Moment &&
+      other.utcMs == utcMs &&
+      other.offsetMinutes == offsetMinutes;
+
+  @override
+  int get hashCode => Object.hash(utcMs, offsetMinutes);
+}
+
+/// A position fix, any field of which may be absent — shaped after the
+/// web's `GeolocationPosition`, as `location_get()` hands it to a story.
+final class Position {
+  const Position({
+    this.label,
+    this.latitude,
+    this.longitude,
+    this.accuracy,
+    this.when,
+  });
+
+  /// A place's name, when the fix has one.
+  final String? label;
+  final double? latitude;
+  final double? longitude;
+
+  /// In metres.
+  final double? accuracy;
+
+  /// When the fix was taken.
+  final Moment? when;
+}
 
 final class TraceValue {
   const TraceValue({

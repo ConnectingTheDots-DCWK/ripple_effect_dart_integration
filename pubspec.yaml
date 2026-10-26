@@ -3,7 +3,7 @@ description: >-
   Play a campaign written in the Ripple Effect editor from Dart or Flutter —
   a Flame game, an app, a server — with the engine's own story, dice and
   soundscape scheduling, over its C ABI.
-version: 1.5.0
+version: 1.6.0
 homepage: https://ripplefx.app
 repository: https://github.com/ConnectingTheDots-DCWK/ripple_effect_dart_integration
 issue_tracker: https://github.com/ConnectingTheDots-DCWK/ripple_effect_dart_integration/issues

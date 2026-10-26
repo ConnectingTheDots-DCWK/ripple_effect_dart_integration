@@ -1,6 +1,6 @@
 // The WIT's names for what the C header numbers, in the header's order — so
 // a record read on the web carries the number a native host reads. Pure Dart,
-// so test/web_tables_test.dart can hold every list to the generated C
+// so test/tables_test.dart can hold every list to the generated C
 // enums on the VM.
 
 /// `RippleTurnKind`.
@@ -11,10 +11,17 @@ const List<String> turnKinds = [
   'ended',
   'failed',
   'stopped',
+  'permit',
 ];
 
 /// `RippleVerb`.
-const List<String> verbs = ['choose', 'answer', 'elapsed'];
+const List<String> verbs = [
+  'choose',
+  'answer',
+  'elapsed',
+  'begin-countdown',
+  'expire',
+];
 
 /// `RippleRunIssue`.
 const List<String> runIssues = [
@@ -22,6 +29,7 @@ const List<String> runIssues = [
   'multiple-inputs',
   'producer-not-run',
   'reentered',
+  'nothing-on-wire',
 ];
 
 /// `RippleTurnOutcome`.
@@ -61,7 +69,12 @@ const List<String> callbackKinds = [
   'node-entered',
   'node-exited',
   'node-failed',
+  'countdown-started',
+  'countdown-expired',
 ];
+
+/// `RipplePermissionKind`.
+const List<String> permissionKinds = ['date-time', 'location'];
 
 /// `RippleRunEventKind`.
 const List<String> runEventKinds = [

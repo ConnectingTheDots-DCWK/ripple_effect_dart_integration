@@ -12,6 +12,9 @@
 ///     Show(:final passage) => session.choose(pick(passage)),
 ///     Ask(:final prompt) => session.answer(fill(prompt)),
 ///     Hold(:final ms) => await wait(ms, session.elapsed), // your clock
+///     Permit(:final kinds) => [ // it reads the clock or the place
+///       for (final kind in kinds) ...session.permit(kind, granted: allow(kind)),
+///     ],
 ///     _ => throw StateError('every batch ends on a Turn'),
 ///   };
 /// }
@@ -31,7 +34,7 @@ export 'src/mixer_types.dart' show Phase, VoiceCommand, VoiceKind;
 export 'src/player.dart';
 export 'src/records.dart';
 export 'src/session.dart' show Session;
-export 'src/session_types.dart';
+export 'src/session_types.dart' hide standInOffset;
 export 'src/soundscape_driver.dart';
 export 'src/speaker.dart' hide VoiceInbox, VoiceReport;
 export 'src/value.dart'

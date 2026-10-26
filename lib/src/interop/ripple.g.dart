@@ -1181,6 +1181,35 @@ RippleResult ripple_session_answer(
   );
 }
 
+/// The host's clock says the shown passage's countdown begins — after the
+/// passage's `after_ms`. Moves nothing: the effects are only the callbacks
+/// an author aimed at it, and empty when there are none.
+///
+/// # Safety
+/// `session` is live; `out` is writable.
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<RippleSession>,
+    ffi.Pointer<ffi.Pointer<RippleEffects>>,
+    ffi.Pointer<ffi.Pointer<RippleError>>,
+  )
+>(symbol: 'ripple_session_begin_countdown')
+external int _ripple_session_begin_countdown(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<ffi.Pointer<RippleEffects>> out,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+);
+
+RippleResult ripple_session_begin_countdown(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<ffi.Pointer<RippleEffects>> out,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+) {
+  return RippleResult.fromValue(
+    _ripple_session_begin_countdown(session, out, error),
+  );
+}
+
 /// The board the story is on, by index into the manifest's boards.
 ///
 /// # Safety
@@ -1471,6 +1500,32 @@ RippleResult ripple_session_entities(
   return RippleResult.fromValue(_ripple_session_entities(session, out, error));
 }
 
+/// The host's clock says the countdown ran out: the passage's default is
+/// taken, and the effects run to the next turn.
+///
+/// # Safety
+/// `session` is live; `out` is writable.
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<RippleSession>,
+    ffi.Pointer<ffi.Pointer<RippleEffects>>,
+    ffi.Pointer<ffi.Pointer<RippleError>>,
+  )
+>(symbol: 'ripple_session_expire')
+external int _ripple_session_expire(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<ffi.Pointer<RippleEffects>> out,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+);
+
+RippleResult ripple_session_expire(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<ffi.Pointer<RippleEffects>> out,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+) {
+  return RippleResult.fromValue(_ripple_session_expire(session, out, error));
+}
+
 /// The dice's state. A save carries none, so a host that wants the dice to
 /// run on across a resume copies it from the old session to the new.
 ///
@@ -1614,6 +1669,41 @@ RippleResult ripple_session_pause(
   ffi.Pointer<ffi.Pointer<RippleError>> error,
 ) {
   return RippleResult.fromValue(_ripple_session_pause(session, out, error));
+}
+
+/// The host's answer for one kind — a [`RipplePermissionKind`] — at any
+/// time, before `ripple_session_start` included. On a `permit` turn, the
+/// answer to the last kind unanswered begins the story.
+///
+/// # Safety
+/// `session` is live; `out` is writable.
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<RippleSession>,
+    ffi.Uint32,
+    ffi.Bool,
+    ffi.Pointer<ffi.Pointer<RippleEffects>>,
+    ffi.Pointer<ffi.Pointer<RippleError>>,
+  )
+>(symbol: 'ripple_session_permit')
+external int _ripple_session_permit(
+  ffi.Pointer<RippleSession> session,
+  int kind,
+  bool granted,
+  ffi.Pointer<ffi.Pointer<RippleEffects>> out,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+);
+
+RippleResult ripple_session_permit(
+  ffi.Pointer<RippleSession> session,
+  int kind,
+  bool granted,
+  ffi.Pointer<ffi.Pointer<RippleEffects>> out,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+) {
+  return RippleResult.fromValue(
+    _ripple_session_permit(session, kind, granted, out, error),
+  );
 }
 
 /// Whether this session can run scripts: false on the `no-python` engine.
@@ -1852,6 +1942,104 @@ RippleResult ripple_session_set_locale(
   );
 }
 
+/// What time it is, from the host — NULL for no clock. Called before every
+/// verb that can step, by a host that granted `dateTime`.
+///
+/// # Safety
+/// `session` is live; `now` is NULL or readable.
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<RippleSession>,
+    ffi.Pointer<RippleMoment>,
+    ffi.Pointer<ffi.Pointer<RippleError>>,
+  )
+>(symbol: 'ripple_session_set_now')
+external int _ripple_session_set_now(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<RippleMoment> now,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+);
+
+RippleResult ripple_session_set_now(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<RippleMoment> now,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+) {
+  return RippleResult.fromValue(_ripple_session_set_now(session, now, error));
+}
+
+/// The host's last position fix — NULL for none. Refused with
+/// `RIPPLE_ERROR_NOT_PERMITTED` once location is denied; a fix given
+/// before the answer is kept, and read only if it is yes.
+///
+/// # Safety
+/// `session` is live; `position` is NULL or readable, its strings and its
+/// `when` with it.
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<RippleSession>,
+    ffi.Pointer<RipplePosition>,
+    ffi.Pointer<ffi.Pointer<RippleError>>,
+  )
+>(symbol: 'ripple_session_set_position')
+external int _ripple_session_set_position(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<RipplePosition> position,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+);
+
+RippleResult ripple_session_set_position(
+  ffi.Pointer<RippleSession> session,
+  ffi.Pointer<RipplePosition> position,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+) {
+  return RippleResult.fromValue(
+    _ripple_session_set_position(session, position, error),
+  );
+}
+
+/// The reader's stand-in for one kind, as they typed it — a NULL string
+/// takes it away. A time typed without an offset is read at
+/// `local_offset_minutes`. Refused with `RIPPLE_ERROR_STAND_IN`, saying
+/// why, for one that does not read.
+///
+/// # Safety
+/// `session` is live; `typed` is readable or NULL.
+@ffi.Native<
+  ffi.Int Function(
+    ffi.Pointer<RippleSession>,
+    ffi.Uint32,
+    RippleStr,
+    ffi.Int32,
+    ffi.Pointer<ffi.Pointer<RippleError>>,
+  )
+>(symbol: 'ripple_session_set_stand_in')
+external int _ripple_session_set_stand_in(
+  ffi.Pointer<RippleSession> session,
+  int kind,
+  RippleStr typed,
+  int local_offset_minutes,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+);
+
+RippleResult ripple_session_set_stand_in(
+  ffi.Pointer<RippleSession> session,
+  int kind,
+  RippleStr typed,
+  int local_offset_minutes,
+  ffi.Pointer<ffi.Pointer<RippleError>> error,
+) {
+  return RippleResult.fromValue(
+    _ripple_session_set_stand_in(
+      session,
+      kind,
+      typed,
+      local_offset_minutes,
+      error,
+    ),
+  );
+}
+
 /// Turns `trace` effects on or off.
 ///
 /// # Safety
@@ -2076,7 +2264,7 @@ const int RIPPLE_CHOICE_NONE = 4294967295;
 
 const int RIPPLE_CONTRACT_MAJOR = 1;
 
-const int RIPPLE_CONTRACT_MINOR = 5;
+const int RIPPLE_CONTRACT_MINOR = 6;
 
 const double RIPPLE_MIXER_DEFAULT_GAIN_STEP = 0.004;
 
@@ -2249,7 +2437,9 @@ enum RippleCallbackKind {
   RIPPLE_CALLBACK_KIND_MACHINE_STATE_ENTERED(14),
   RIPPLE_CALLBACK_KIND_NODE_ENTERED(15),
   RIPPLE_CALLBACK_KIND_NODE_EXITED(16),
-  RIPPLE_CALLBACK_KIND_NODE_FAILED(17);
+  RIPPLE_CALLBACK_KIND_NODE_FAILED(17),
+  RIPPLE_CALLBACK_KIND_COUNTDOWN_STARTED(18),
+  RIPPLE_CALLBACK_KIND_COUNTDOWN_EXPIRED(19);
 
   final int value;
   const RippleCallbackKind(this.value);
@@ -2273,6 +2463,8 @@ enum RippleCallbackKind {
     15 => RIPPLE_CALLBACK_KIND_NODE_ENTERED,
     16 => RIPPLE_CALLBACK_KIND_NODE_EXITED,
     17 => RIPPLE_CALLBACK_KIND_NODE_FAILED,
+    18 => RIPPLE_CALLBACK_KIND_COUNTDOWN_STARTED,
+    19 => RIPPLE_CALLBACK_KIND_COUNTDOWN_EXPIRED,
     _ => throw ArgumentError('Unknown value for RippleCallbackKind: $value'),
   };
 }
@@ -2332,6 +2524,38 @@ final class RippleChoice extends ffi.Struct {
   /// still shown, so the reader can see the path they spent.
   @ffi.Bool()
   external bool available;
+}
+
+/// A passage's countdown — `campaign-host-api.md` §4b. The host's clock
+/// waits `after_ms`, calls `ripple_session_begin_countdown`, waits
+/// `timeout_ms` and calls `ripple_session_expire`; the engine measures none
+/// of it.
+final class RippleChoiceTimer extends ffi.Struct {
+  @ffi.Uint64()
+  external int after_ms;
+
+  @ffi.Uint64()
+  external int timeout_ms;
+
+  /// Whether the author meant the reader to see it count.
+  @ffi.Bool()
+  external bool visible;
+
+  /// The index into the passage's choices taken when it runs out.
+  @ffi.Uint32()
+  external int default_choice;
+
+  static ffi.Pointer<RippleChoiceTimer> $allocate(
+    ffi.Allocator $allocator, {
+    required int after_ms,
+    required int timeout_ms,
+    required bool visible,
+    required int default_choice,
+  }) => $allocator<RippleChoiceTimer>()
+    ..ref.after_ms = after_ms
+    ..ref.timeout_ms = timeout_ms
+    ..ref.visible = visible
+    ..ref.default_choice = default_choice;
 }
 
 /// `ripple_session_console_feed`'s answer.
@@ -2466,6 +2690,10 @@ final class RippleEffectData extends ffi.Union {
   external ffi.Pointer<RippleEnded> ended;
 
   external ffi.Pointer<RippleFailed> failed;
+
+  external ffi.Pointer<RipplePermit> permit;
+
+  external ffi.Pointer<RippleNotice> notice;
 }
 
 /// What an effect carries.
@@ -2504,7 +2732,15 @@ enum RippleEffectKind {
   RIPPLE_EFFECT_KIND_FAILED(10),
 
   /// The session stopped — a Turn. Carries nothing.
-  RIPPLE_EFFECT_KIND_STOPPED(11);
+  RIPPLE_EFFECT_KIND_STOPPED(11),
+
+  /// `permit`: the story has not begun and reads these — a Turn; answer
+  /// each with `ripple_session_permit`.
+  RIPPLE_EFFECT_KIND_PERMIT(12),
+
+  /// `notice`: a read of the world outside the story did not get the real
+  /// value.
+  RIPPLE_EFFECT_KIND_NOTICE(13);
 
   final int value;
   const RippleEffectKind(this.value);
@@ -2522,6 +2758,8 @@ enum RippleEffectKind {
     9 => RIPPLE_EFFECT_KIND_ENDED,
     10 => RIPPLE_EFFECT_KIND_FAILED,
     11 => RIPPLE_EFFECT_KIND_STOPPED,
+    12 => RIPPLE_EFFECT_KIND_PERMIT,
+    13 => RIPPLE_EFFECT_KIND_NOTICE,
     _ => throw ArgumentError('Unknown value for RippleEffectKind: $value'),
   };
 }
@@ -2884,6 +3122,13 @@ final class RippleManifest extends ffi.Struct {
 
   @ffi.Size()
   external int need_count;
+
+  /// What the story reads of the world outside it: `dateTime`,
+  /// `location`. A session asks about each before the story begins.
+  external ffi.Pointer<RippleStr> permissions;
+
+  @ffi.Size()
+  external int permission_count;
 }
 
 /// A link in a passage's prose, and the medium it names.
@@ -2910,6 +3155,24 @@ final class RippleMemory extends ffi.Struct {
 /// The scheduler. Destroyed with [`ripple_mixer_destroy`].
 final class RippleMixer extends ffi.Opaque {}
 
+/// An instant from the host: milliseconds since the epoch, and the offset
+/// in minutes the reader's wall clock is at.
+final class RippleMoment extends ffi.Struct {
+  @ffi.Int64()
+  external int utc_ms;
+
+  @ffi.Int32()
+  external int offset_minutes;
+
+  static ffi.Pointer<RippleMoment> $allocate(
+    ffi.Allocator $allocator, {
+    required int utc_ms,
+    required int offset_minutes,
+  }) => $allocator<RippleMoment>()
+    ..ref.utc_ms = utc_ms
+    ..ref.offset_minutes = offset_minutes;
+}
+
 /// A node of a board, as compiled.
 final class RippleNode extends ffi.Struct {
   external RippleStr id;
@@ -2931,6 +3194,38 @@ final class RippleNode extends ffi.Struct {
   external RippleValue data;
 
   external RippleValue metadata;
+}
+
+/// `notice`'s payload. `code` is the playthrough family's — `I.RT.05`,
+/// `W.RT.06`, `I.RT.07` — and its letter is the severity; `message` is the
+/// engine's English sentence.
+final class RippleNotice extends ffi.Struct {
+  external RippleStr code;
+
+  /// A [`RipplePermissionKind`].
+  @ffi.Uint32()
+  external int kind;
+
+  external RippleStr node;
+
+  external RippleStr message;
+}
+
+/// A `double` that may be absent.
+final class RippleOptionalF64 extends ffi.Struct {
+  @ffi.Bool()
+  external bool present;
+
+  @ffi.Double()
+  external double value;
+
+  static ffi.Pointer<RippleOptionalF64> $allocate(
+    ffi.Allocator $allocator, {
+    required bool present,
+    required double value,
+  }) => $allocator<RippleOptionalF64>()
+    ..ref.present = present
+    ..ref.value = value;
 }
 
 /// An `int64_t` that may be absent.
@@ -3028,6 +3323,10 @@ final class RipplePassage extends ffi.Struct {
   /// True when the passage asks for silence.
   @ffi.Bool()
   external bool silence;
+
+  /// The passage's countdown; NULL when it waits for the reader for as
+  /// long as they like.
+  external ffi.Pointer<RippleChoiceTimer> timer;
 }
 
 /// `ripple_session_pause`'s answer.
@@ -3061,6 +3360,37 @@ enum RipplePayloadKind {
     2 => RIPPLE_PAYLOAD_KIND_ABSENT,
     _ => throw ArgumentError('Unknown value for RipplePayloadKind: $value'),
   };
+}
+
+/// What a story may read of the world outside it. The microphone is not one.
+enum RipplePermissionKind {
+  RIPPLE_PERMISSION_KIND_DATE_TIME(0),
+  RIPPLE_PERMISSION_KIND_LOCATION(1);
+
+  final int value;
+  const RipplePermissionKind(this.value);
+
+  static RipplePermissionKind fromValue(int value) => switch (value) {
+    0 => RIPPLE_PERMISSION_KIND_DATE_TIME,
+    1 => RIPPLE_PERMISSION_KIND_LOCATION,
+    _ => throw ArgumentError('Unknown value for RipplePermissionKind: $value'),
+  };
+}
+
+/// `permit`'s payload: each a [`RipplePermissionKind`].
+final class RipplePermit extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint32> kinds;
+
+  @ffi.Size()
+  external int kind_count;
+
+  static ffi.Pointer<RipplePermit> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<ffi.Uint32> kinds,
+    required int kind_count,
+  }) => $allocator<RipplePermit>()
+    ..ref.kinds = kinds
+    ..ref.kind_count = kind_count;
 }
 
 /// Where a soundscape, or one of its tracks, is in its life.
@@ -3113,6 +3443,20 @@ enum RipplePortKind {
   };
 }
 
+/// A position fix, any field of which may be absent.
+final class RipplePosition extends ffi.Struct {
+  external RippleStr label;
+
+  external RippleOptionalF64 latitude;
+
+  external RippleOptionalF64 longitude;
+
+  external RippleOptionalF64 accuracy;
+
+  /// When the fix was taken; NULL when it is not known.
+  external ffi.Pointer<RippleMoment> when;
+}
+
 /// The project a campaign was compiled from.
 final class RippleProject extends ffi.Struct {
   external RippleStr title;
@@ -3149,6 +3493,38 @@ final class RipplePromptField extends ffi.Struct {
   external RippleStr type_name;
 
   external RippleValue default_value;
+
+  /// What the reader is shown for the field, in the reader's language —
+  /// `name` where the author wrote nothing.
+  external RippleStr label;
+
+  /// The hint drawn while the field is empty; empty for none.
+  external RippleStr placeholder;
+
+  /// Whether the reader may leave the field empty, which answers null. A
+  /// required field is not submitted empty.
+  @ffi.Bool()
+  external bool optional;
+
+  /// The fixed answers the reader picks from, in order: one for a scalar
+  /// type, any number for a `…List`. None for a field the reader types
+  /// into. Answer with the picked options' ids.
+  external ffi.Pointer<RipplePromptOption> options;
+
+  @ffi.Size()
+  external int option_count;
+}
+
+/// One fixed answer a form field offers.
+final class RipplePromptOption extends ffi.Struct {
+  /// What a host answers with; stable across languages.
+  external RippleStr id;
+
+  /// What the reader is shown, in the reader's language.
+  external RippleStr label;
+
+  /// What the story is handed when it is picked, of the field's type.
+  external RippleValue value;
 }
 
 /// A script's failure.
@@ -3238,6 +3614,21 @@ enum RippleResult {
   /// A language the campaign is not readable in.
   RIPPLE_ERROR_UNKNOWN_LOCALE(15),
 
+  /// A reading handed in for a kind the host has not granted; `subject`
+  /// is the kind's name.
+  RIPPLE_ERROR_NOT_PERMITTED(16),
+
+  /// A reader's stand-in that does not read as one; `subject` is the
+  /// kind's name, and the message says why.
+  RIPPLE_ERROR_STAND_IN(17),
+
+  /// `ripple_session_begin_countdown` or `ripple_session_expire` on a
+  /// passage with no countdown.
+  RIPPLE_ERROR_NO_COUNTDOWN(18),
+
+  /// `ripple_session_expire` before `ripple_session_begin_countdown`.
+  RIPPLE_ERROR_COUNTDOWN_NOT_BEGUN(19),
+
   /// A save names a board the campaign no longer has.
   RIPPLE_ERROR_BOARD_GONE(20),
 
@@ -3266,6 +3657,10 @@ enum RippleResult {
     13 => RIPPLE_ERROR_STOPPED,
     14 => RIPPLE_ERROR_NOTHING_ASKED,
     15 => RIPPLE_ERROR_UNKNOWN_LOCALE,
+    16 => RIPPLE_ERROR_NOT_PERMITTED,
+    17 => RIPPLE_ERROR_STAND_IN,
+    18 => RIPPLE_ERROR_NO_COUNTDOWN,
+    19 => RIPPLE_ERROR_COUNTDOWN_NOT_BEGUN,
     20 => RIPPLE_ERROR_BOARD_GONE,
     21 => RIPPLE_ERROR_NODE_GONE,
     -1 => RIPPLE_ERROR_INVALID_ARGUMENT,
@@ -3401,7 +3796,8 @@ enum RippleRunIssue {
   RIPPLE_RUN_ISSUE_AMBIGUOUS_FLOW(0),
   RIPPLE_RUN_ISSUE_MULTIPLE_INPUTS(1),
   RIPPLE_RUN_ISSUE_PRODUCER_NOT_RUN(2),
-  RIPPLE_RUN_ISSUE_REENTERED(3);
+  RIPPLE_RUN_ISSUE_REENTERED(3),
+  RIPPLE_RUN_ISSUE_NOTHING_ON_WIRE(4);
 
   final int value;
   const RippleRunIssue(this.value);
@@ -3411,6 +3807,7 @@ enum RippleRunIssue {
     1 => RIPPLE_RUN_ISSUE_MULTIPLE_INPUTS,
     2 => RIPPLE_RUN_ISSUE_PRODUCER_NOT_RUN,
     3 => RIPPLE_RUN_ISSUE_REENTERED,
+    4 => RIPPLE_RUN_ISSUE_NOTHING_ON_WIRE,
     _ => throw ArgumentError('Unknown value for RippleRunIssue: $value'),
   };
 }
@@ -3668,7 +4065,8 @@ enum RippleTurnKind {
   RIPPLE_TURN_KIND_WAIT(2),
   RIPPLE_TURN_KIND_ENDED(3),
   RIPPLE_TURN_KIND_FAILED(4),
-  RIPPLE_TURN_KIND_STOPPED(5);
+  RIPPLE_TURN_KIND_STOPPED(5),
+  RIPPLE_TURN_KIND_PERMIT(6);
 
   final int value;
   const RippleTurnKind(this.value);
@@ -3680,6 +4078,7 @@ enum RippleTurnKind {
     3 => RIPPLE_TURN_KIND_ENDED,
     4 => RIPPLE_TURN_KIND_FAILED,
     5 => RIPPLE_TURN_KIND_STOPPED,
+    6 => RIPPLE_TURN_KIND_PERMIT,
     _ => throw ArgumentError('Unknown value for RippleTurnKind: $value'),
   };
 }
@@ -3809,7 +4208,9 @@ final class RippleValueNode extends ffi.Struct {
 enum RippleVerb {
   RIPPLE_VERB_CHOOSE(0),
   RIPPLE_VERB_ANSWER(1),
-  RIPPLE_VERB_ELAPSED(2);
+  RIPPLE_VERB_ELAPSED(2),
+  RIPPLE_VERB_BEGIN_COUNTDOWN(3),
+  RIPPLE_VERB_EXPIRE(4);
 
   final int value;
   const RippleVerb(this.value);
@@ -3818,6 +4219,8 @@ enum RippleVerb {
     0 => RIPPLE_VERB_CHOOSE,
     1 => RIPPLE_VERB_ANSWER,
     2 => RIPPLE_VERB_ELAPSED,
+    3 => RIPPLE_VERB_BEGIN_COUNTDOWN,
+    4 => RIPPLE_VERB_EXPIRE,
     _ => throw ArgumentError('Unknown value for RippleVerb: $value'),
   };
 }

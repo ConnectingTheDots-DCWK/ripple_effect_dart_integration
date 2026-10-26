@@ -3,6 +3,7 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'call.dart';
+import '../errors.dart';
 import 'campaign.dart';
 import '../effects.dart';
 import 'from.dart' as from;
@@ -13,6 +14,14 @@ import '../value.dart';
 import '../session_types.dart';
 import 'arena.dart';
 import 'check.dart';
+
+/// [kind] as the header's `RipplePermissionKind`.
+int _cKind(PermissionKind kind) => switch (kind) {
+  PermissionKind.dateTime =>
+    RipplePermissionKind.RIPPLE_PERMISSION_KIND_DATE_TIME.value,
+  PermissionKind.location =>
+    RipplePermissionKind.RIPPLE_PERMISSION_KIND_LOCATION.value,
+};
 
 typedef _Call<T extends NativeType> =
     RippleResult Function(
@@ -127,6 +136,81 @@ final class Session implements Finalizable {
   /// Answers a wait, once the host's clock says it is over.
   List<Effect> elapsed() =>
       _batch((out, error) => ripple_session_elapsed(handle, out, error));
+
+  /// The host's clock says the shown passage's countdown begins, its
+  /// [ChoiceTimer.afterMs] after the passage was shown. Moves nothing: the
+  /// batch is the callbacks an author aimed at it, and empty when there are
+  /// none — `campaign-host-api.md` §4b.
+  List<Effect> beginCountdown() => _batch(
+    (out, error) => ripple_session_begin_countdown(handle, out, error),
+  );
+
+  /// The host's clock says the countdown ran out: the passage's default is
+  /// taken, as `choose` would take it, and the story runs to its next Turn.
+  List<Effect> expire() =>
+      _batch((out, error) => ripple_session_expire(handle, out, error));
+
+  /// The reader's answer for one kind, at any time — before [start]
+  /// included, which is how a host that already knows never shows the
+  /// [Permit] turn. On that turn, the answer to the last kind unanswered
+  /// begins the story. Answers are not saved: a resumed session asks again.
+  List<Effect> permit(PermissionKind kind, {required bool granted}) => _batch(
+    (out, error) =>
+        ripple_session_permit(handle, _cKind(kind), granted, out, error),
+  );
+
+  /// What time it is, from the host — null for no clock. Before every verb
+  /// that can step, by a host that granted [PermissionKind.dateTime]; within
+  /// one verb time does not move.
+  void setNow(Moment? now) => using((arena) {
+    final raw = now == null ? nullptr : _moment(arena, now);
+    plain((error) => ripple_session_set_now(handle, raw, error));
+  });
+
+  /// The host's last position fix — null for none. Refused with a
+  /// [HostException] of [Code.notPermitted] once the reader said no to
+  /// [PermissionKind.location]; a fix given before the answer is kept, and
+  /// read only if it is yes.
+  void setPosition(Position? position) => using((arena) {
+    final Pointer<RipplePosition> raw;
+    if (position == null) {
+      raw = nullptr;
+    } else {
+      raw = arena<RipplePosition>();
+      writeStr(arena, position.label, raw.ref.label);
+      _f64(raw.ref.latitude, position.latitude);
+      _f64(raw.ref.longitude, position.longitude);
+      _f64(raw.ref.accuracy, position.accuracy);
+      raw.ref.when = switch (position.when) {
+        null => nullptr,
+        final taken => _moment(arena, taken),
+      };
+    }
+    plain((error) => ripple_session_set_position(handle, raw, error));
+  });
+
+  /// The reader's stand-in for [kind], as they typed it — what a story is
+  /// told whenever the real value is missing; null takes it away. A clock is
+  /// ISO 8601, and one typed without an offset is read at
+  /// [localOffsetMinutes] — the reader's own for that date, this machine's
+  /// zone on that date unless given. A position is `"lat, lon"`, or a
+  /// place's name. One that does not read is a [HostException] of
+  /// [Code.standIn], its message saying why.
+  void setStandIn(
+    PermissionKind kind,
+    String? typed, {
+    int? localOffsetMinutes,
+  }) => using(
+    (arena) => plain(
+      (error) => ripple_session_set_stand_in(
+        handle,
+        _cKind(kind),
+        str(arena, typed),
+        localOffsetMinutes ?? standInOffset(kind, typed),
+        error,
+      ),
+    ),
+  );
 
   List<Effect> setLocale(String locale) => using(
     (arena) => _batch(
@@ -323,6 +407,20 @@ final class Session implements Finalizable {
 
   String? _text(_Call<RippleStr> call) =>
       owned<RippleStr, String>(call, (s) => readStr(s.ref));
+}
+
+Pointer<RippleMoment> _moment(Arena arena, Moment moment) {
+  final raw = arena<RippleMoment>();
+  raw.ref
+    ..utc_ms = moment.utcMs
+    ..offset_minutes = moment.offsetMinutes;
+  return raw;
+}
+
+void _f64(RippleOptionalF64 out, double? value) {
+  out
+    ..present = value != null
+    ..value = value ?? 0;
 }
 
 /// [options] as the engine reads them.

@@ -1,7 +1,9 @@
 // A Ripple Effect campaign in a Flame game. The game owns the loop: every
 // frame it tells the Player and the SoundscapeDriver the time has moved,
-// which is how a hold is answered and a fade is written. The story itself is
-// a Flutter overlay over the game — a passage, its choices, the ending.
+// which is how a hold is answered, a passage's countdown runs and a fade is
+// written. The story itself is a Flutter overlay over the game — the
+// question a story that reads the clock or the place asks first, a passage,
+// its choices, the ending.
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +26,10 @@ final class StoryGame extends FlameGame {
 
   /// Where the story is, for the overlay to draw; notified on every Turn.
   final ValueNotifier<Turn?> turn = ValueNotifier(null);
+
+  /// How much of a visible countdown is left, from 1 to 0; null while none
+  /// is running.
+  final ValueNotifier<double?> countdown = ValueNotifier(null);
 
   @override
   Future<void> onLoad() async {
@@ -48,10 +54,13 @@ final class StoryGame extends FlameGame {
         ),
       ),
       audio: audio,
+      now: _clock,
       onEffect: (effect) {
         if (effect is Turn) turn.value = effect;
       },
       onError: (error, stack) => debugPrint('ripple: $error'),
+      // The story's clock is the reader's, once they allow it.
+      wallClock: Moment.now,
     );
     player.start();
     overlays.add(kStoryOverlay);
@@ -64,6 +73,23 @@ final class StoryGame extends FlameGame {
     // the soundscape's timeline moves on.
     player.update();
     audio.update();
+    countdown.value = switch (player.countdown) {
+      Countdown(:final timer, begun: true, :final due) when timer.visible =>
+        ((due - _clock()) / timer.timeoutMs).clamp(0.0, 1.0),
+      _ => null,
+    };
+  }
+
+  // The player's clock, read the same way: milliseconds from a stopwatch.
+  final Clock _clock = Clocks.steady();
+
+  /// The reader's answer for a kind the story asked about. This example
+  /// has no location, so a yes to it is a story told it has none.
+  void permit(PermissionKind kind, {required bool granted}) {
+    player.permit(kind, granted: granted);
+    // Until the last kind is answered the story has not begun, and the
+    // player's turn is the question less what was answered.
+    turn.value = player.turn;
   }
 
   void choose(int index) => player.choose(index);

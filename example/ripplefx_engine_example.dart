@@ -36,7 +36,17 @@ Future<void> main(List<String> args) async {
         ),
       ),
       audio: audio,
+      onEffect: (effect) {
+        // A story that read the clock or the place and did not get it.
+        if (effect case Notice(:final message)) {
+          stdout.writeln('  [notice] $message');
+        }
+      },
       onError: (error, _) => stderr.writeln(error),
+      // A terminal waits on the reader's line, so no frame could run a
+      // countdown out: the reader is given all the time they like.
+      countdowns: false,
+      wallClock: Moment.now,
     );
     player.onAnyCallback(
       (fired) =>
@@ -60,6 +70,8 @@ Future<void> main(List<String> args) async {
           } else {
             player.leave();
           }
+        case Permit(:final kinds):
+          player.permit(kinds.first, granted: _allow(kinds.first));
         case Ask():
           player.answer(null);
         default:
@@ -82,9 +94,24 @@ Future<void> main(List<String> args) async {
   }
 }
 
+// The reader's answer for a kind the story reads: it asks before it begins.
+bool _allow(PermissionKind kind) {
+  stdout.write(switch (kind) {
+    PermissionKind.dateTime => '\nThis story reads the date and time. Allow? ',
+    PermissionKind.location => '\nThis story reads where you are. Allow? ',
+  });
+  return (stdin.readLineSync() ?? '').trim().toLowerCase().startsWith('y');
+}
+
 // The index of the choice taken, or null when the reader leaves.
 int? _ask(Passage passage) {
   stdout.writeln('\n== ${passage.title} ==\n${passage.text}\n');
+  if (passage.timer case final timer? when timer.visible) {
+    stdout.writeln(
+      '  (in a game this would count down, and take choice '
+      '${timer.defaultChoice + 1} when it ran out)',
+    );
+  }
   if (passage.choices.isEmpty) return null;
   for (final (i, choice) in passage.choices.indexed) {
     stdout.writeln(

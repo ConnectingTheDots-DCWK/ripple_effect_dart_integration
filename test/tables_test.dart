@@ -72,6 +72,43 @@ void main() {
     'RIPPLE_RUN_EVENT_KIND_',
   );
 
+  holds(
+    'RipplePermissionKind',
+    permissionKinds,
+    RipplePermissionKind.values,
+    'RIPPLE_PERMISSION_KIND_',
+  );
+
+  test('the web reads PermissionKind in the table\'s order', () {
+    // web/from.dart and web/to.dart index the table by PermissionKind.
+    expect(
+      [for (final kind in PermissionKind.values) kind.wire],
+      [
+        for (final wit in permissionKinds)
+          wit.replaceAllMapped(
+            RegExp('-(.)'),
+            (m) => m.group(1)!.toUpperCase(),
+          ),
+      ],
+    );
+  });
+
+  test('every code the header returns is a Code of the same number', () {
+    String snake(String camel) => camel
+        .replaceAllMapped(RegExp('[A-Z]'), (m) => '_${m.group(0)}')
+        .toUpperCase();
+    for (final result in RippleResult.values) {
+      final code = Code.of(result.value);
+      expect(code.value, result.value, reason: result.name);
+      expect(
+        result.name,
+        code == Code.success
+            ? 'RIPPLE_SUCCESS'
+            : 'RIPPLE_ERROR_${snake(code.name)}',
+      );
+    }
+  });
+
   test("a callback's name is its tag with the dashes made dots", () {
     for (final (i, kind) in callbackKinds.indexed) {
       expect(

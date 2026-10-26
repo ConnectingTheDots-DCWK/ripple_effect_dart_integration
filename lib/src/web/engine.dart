@@ -26,7 +26,7 @@ bool? debugPython;
 /// The engine library this program loaded, and what it binds.
 abstract final class RippleEngine {
   /// The contract these bindings bind: `MAJOR.MINOR`.
-  static const String boundContract = '1.5';
+  static const String boundContract = '1.6';
 
   static Future<_Loaded>? _loading;
   static _Loaded? _loaded;
@@ -41,10 +41,10 @@ abstract final class RippleEngine {
     _loaded ??= await (_loading ??= _load(base));
   }
 
-  /// The engine library's version, `1.5.4`.
+  /// The engine library's version, `1.6.0`.
   static String get version => _require().version;
 
-  /// The contract the loaded engine binds, `1.5`.
+  /// The contract the loaded engine binds, `1.6`.
   static String get contract {
     final parts = version.split('.');
     return '${parts[0]}.${parts[1]}';

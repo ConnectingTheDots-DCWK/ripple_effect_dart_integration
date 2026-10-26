@@ -3,8 +3,8 @@ import 'records.dart';
 /// One thing a verb led to.
 ///
 /// A verb answers a batch of them in the order they are applied, and the
-/// last is a Turn — where the story now is: [Show], [Ask], [Hold], [Ended],
-/// [Failed] or [Stopped].
+/// last is a Turn — where the story now is: [Show], [Ask], [Hold],
+/// [Permit], [Ended], [Failed] or [Stopped].
 ///
 /// ```dart
 /// for (final effect in session.start()) {
@@ -70,6 +70,30 @@ final class Changed extends Effect {
   final List<CvarSnapshot>? cvars;
 }
 
+/// A read of the world outside the story did not get the real value — a
+/// stand-in, a refusal, or nothing — said once per kind and outcome in a
+/// playthrough, in the batch of the read and before its Turn.
+final class Notice extends Effect {
+  const Notice({
+    required this.code,
+    required this.kind,
+    this.node,
+    required this.message,
+  });
+
+  /// The playthrough family's code — `I.RT.05` a stand-in, `W.RT.06` a
+  /// refusal, `I.RT.07` nothing — whose letter is the severity.
+  final String code;
+  final PermissionKind kind;
+
+  /// The node whose read it was.
+  final String? node;
+
+  /// The engine's English sentence, for a log or a developer, never for a
+  /// host to parse.
+  final String message;
+}
+
 /// The Turns: the last effect of every batch.
 sealed class Turn extends Effect {
   const Turn();
@@ -78,7 +102,8 @@ sealed class Turn extends Effect {
   bool get isTurn => true;
 }
 
-/// A Turn: a passage, answered with `choose` or `leave`.
+/// A Turn: a passage, answered with `choose` or `leave` — or, when its
+/// [Passage.timer] runs out, with `expire`.
 final class Show extends Turn {
   const Show(this.passage);
 
@@ -97,6 +122,16 @@ final class Hold extends Turn {
   const Hold(this.ms);
 
   final int ms;
+}
+
+/// A Turn: the story has not begun, and reads these kinds nobody has
+/// answered for. Ask the reader, and answer each with `permit`; the answer
+/// to the last begins the story. A host that already knows its answers gives
+/// them before `start`, and never sees this.
+final class Permit extends Turn {
+  const Permit(this.kinds);
+
+  final List<PermissionKind> kinds;
 }
 
 /// The Turns after which the story goes no further.
