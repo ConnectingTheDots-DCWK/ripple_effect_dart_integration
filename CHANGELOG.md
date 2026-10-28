@@ -5,7 +5,7 @@
 
 ## 1.6.0
 
-- **Contract 1.6, Grammar Lich**, pinning engine 1.6.0: the interop
+- **Contract 1.6, Grammar Lich**, pinning engine 1.6.1: the interop
   regenerated from its header, and both backends — `dart:ffi` and the web
   component — binding the same additions.
 - **A story that reads the clock or the place asks first.**
