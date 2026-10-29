@@ -1,37 +1,70 @@
-# Publishes a release to pub.dev, with the pin checked and the suite run
-# first, and cuts the GitHub release beside it.
+# Publishing to pub.dev, with GitHub's OIDC token rather than anybody's
+# credentials, after the pin is checked and the suite has run. Two ways in:
 #
-# pub.dev's automated publishing accepts only a run started by a **tag
-# push** — not a dispatch — so the tag is the release: `git tag v1.5.0 &&
-# git push origin v1.5.0`, by the maintainer, from main. The tag must be
-# `v` and the pubspec's version, or pub.dev refuses the token. No secret is
-# stored: the job's OIDC token is what pub.dev trusts, once the package's
-# admin page enables automated publishing for this repository with the tag
-# pattern `v{{version}}`. The first version of a package is uploaded by hand.
-
+# - **Run it by hand** (Actions → Publish → Run workflow, on main). With
+#   `createRelease` on — the default — it reads the version from pubspec.yaml,
+#   runs the suite, tags that commit `v<version>`, cuts the GitHub release with
+#   the CHANGELOG's section for that version as its notes, and then publishes.
+#   With it off, it only publishes, and must be run on the tag (Use workflow
+#   from → Tags) — which is also how a publish that failed is retried.
+# - **Push a tag, or create a release in the UI** (which pushes its tag), and
+#   it only publishes.
+#
+# pub.dev accepts a token only from a run whose ref is a tag matching the
+# package's pattern, so the release job cannot publish from the branch it ran
+# on. And a tag pushed with GITHUB_TOKEN starts no workflow, so it cannot rely
+# on the push either: it dispatches this workflow again *on the new tag*, with
+# `createRelease` off, and that run publishes. pub.dev therefore needs both
+# boxes ticked under Admin → Automated publishing — "push events" and
+# "workflow_dispatch events" — with the tag pattern `v{{version}}`. The first
+# version of a package is uploaded by hand. The shape is the one fl_panel,
+# fl_nodes_v2, fl_crashpad and dart_read_time publish with.
+#
+# Not dart-lang/setup-dart's reusable publish workflow: that publishes the
+# tree as checked out, and the web engine is generated, never committed.
+# setup-dart still configures pub.dev's OIDC token for a job that may ask for
+# one, which is all automated publishing needs.
 name: Publish
 
 on:
   push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+  workflow_dispatch:
+    inputs:
+      createRelease:
+        description: >-
+          Tag v<pubspec version> and cut the GitHub release first. Off: only
+          publish, and run it on the tag.
+        type: boolean
+        default: true
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  # Both ways in, before anything is tagged or uploaded: a suite that fails
+  # leaves nothing behind.
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - name: The tag is the pubspec's version, on main
+      - name: The ref is main or the pubspec's tag, and the CHANGELOG has the version
         run: |
           version="$(sed -n 's/^version: //p' pubspec.yaml)"
-          [ "${GITHUB_REF_NAME}" = "v${version}" ] || { echo "tag ${GITHUB_REF_NAME}, pubspec ${version}"; exit 1; }
-          grep -q "^## ${version}$" CHANGELOG.md || { echo "CHANGELOG.md has no ## ${version}"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            [ "$GITHUB_REF_NAME" = "v${version}" ] || { echo "::error::The tag is $GITHUB_REF_NAME but pubspec.yaml says $version."; exit 1; }
+          else
+            [ "$GITHUB_REF" = refs/heads/main ] || { echo "::error::A release is cut from main, not $GITHUB_REF."; exit 1; }
+          fi
+          grep -q "^## ${version}$" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## ${version}' section."; exit 1; }
           git fetch -q origin main
-          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "${GITHUB_REF_NAME} is not on main"; exit 1; }
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::$GITHUB_REF_NAME is not on main."; exit 1; }
       - run: bash scripts/pin-engine.sh --verify
       - run: dart pub get
       - name: Read the pinned Node version
@@ -49,18 +82,75 @@ jobs:
           RIPPLE_VARIANT: python
       - run: dart run tool/variant.dart python && dart test -p chrome --compiler dart2js,dart2wasm
 
-  # Not dart-lang/setup-dart's reusable publish workflow: that publishes the
-  # tree as checked out, and the web engine is generated, never committed.
-  # setup-dart still configures pub.dev's OIDC token for a job that may ask
-  # for one, which is all automated publishing needs.
+  release:
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' && inputs.createRelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # the tag and the release
+      actions: write # dispatching the publish run on the tag
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the package's name and version
+        id: package
+        run: |
+          echo "name=$(sed -n 's/^name: *//p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
+          echo "version=$(sed -n 's/^version: *//p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse a version that is already tagged
+        env:
+          TAG: v${{ steps.package.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "::error::$TAG already exists. Bump the version in pubspec.yaml, or run this on the tag with createRelease off to publish it."
+            exit 1
+          fi
+
+      # The section under `## <version>`, up to the next heading of that level.
+      - name: Take the release notes from the CHANGELOG
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          awk -v v="$VERSION" '
+            $0 == "## " v { f = 1; next }
+            /^## / { if (f) exit }
+            f
+          ' CHANGELOG.md | sed -e '/./,$!d' > "$RUNNER_TEMP/notes.md"
+          printf '\nhttps://pub.dev/packages/%s/versions/%s\n' "${{ steps.package.outputs.name }}" "$VERSION" >> "$RUNNER_TEMP/notes.md"
+
+      - name: Tag, release, and hand over to the publish run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: ${{ steps.package.outputs.name }}
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "v$VERSION" -m "$NAME $VERSION"
+          git push origin "v$VERSION"
+          prerelease=()
+          case "$VERSION" in *-*) prerelease=(--prerelease) ;; esac
+          gh release create "v$VERSION" --verify-tag "${prerelease[@]}" \
+            --title "$NAME $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          gh workflow run publish.yml --ref "v$VERSION" -f createRelease=false
+          echo "Released v$VERSION; the publish run is starting on the tag." >> "$GITHUB_STEP_SUMMARY"
+
   publish:
     needs: verify
+    if: github.event_name == 'push' || !inputs.createRelease
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-      id-token: write
+      id-token: write # the OIDC token pub.dev accepts
     steps:
+      - name: Refuse to run anywhere but a tag
+        if: github.ref_type != 'tag'
+        run: |
+          echo "::error::pub.dev only accepts a publish from a tag. Run this on the tag (Use workflow from → Tags), or turn createRelease on."
+          exit 1
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
       - name: Read the pinned Node version
@@ -83,20 +173,3 @@ jobs:
       - name: pub.dev's own reader accepts it
         run: bash scripts/check-pub-dev.sh
       - run: dart pub publish --force
-
-  release:
-    needs: publish
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: The GitHub release, its notes the changelog's section
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          awk -v v="## ${version}" '$0==v{on=1;next} /^## /{on=0} on' CHANGELOG.md > notes.md
-          printf '\nhttps://pub.dev/packages/ripplefx_engine/versions/%s\n' "$version" >> notes.md
-          gh release create "$GITHUB_REF_NAME" --title "ripplefx_engine $version" --notes-file notes.md --verify-tag
