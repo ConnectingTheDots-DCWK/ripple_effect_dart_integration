@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dart-lang/setup-dart@v1
       - name: The ref is main or the pubspec's tag, and the CHANGELOG has the version
         run: |
@@ -70,7 +70,7 @@ jobs:
       - name: Read the pinned Node version
         id: node
         run: echo "version=$(bash scripts/mise_pin.sh node)" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ steps.node.outputs.version }}
       - run: dart run tool/engine.dart fetch --conformance --web
@@ -91,7 +91,7 @@ jobs:
       contents: write # the tag and the release
       actions: write # dispatching the publish run on the tag
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Read the package's name and version
         id: package
@@ -151,12 +151,12 @@ jobs:
         run: |
           echo "::error::pub.dev only accepts a publish from a tag. Run this on the tag (Use workflow from → Tags), or turn createRelease on."
           exit 1
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dart-lang/setup-dart@v1
       - name: Read the pinned Node version
         id: node
         run: echo "version=$(bash scripts/mise_pin.sh node)" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ steps.node.outputs.version }}
       - run: dart pub get
